@@ -1,0 +1,2 @@
+# DNC
+Discord Name Checker
