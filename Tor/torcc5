@@ -1,0 +1,11 @@
+SocksPort 9058
+ControlPort 9059
+CookieAuthentication 1
+ExitNodes {FR}
+
+GeoIPFile Tor\geoip
+GeoIPv6File Tor\geoip6
+DataDirectory Tor\data5
+EnforceDistinctSubnets 0
+MaxCircuitDirtiness 5
+NewCircuitPeriod 5
