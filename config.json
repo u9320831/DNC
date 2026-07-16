@@ -1,0 +1,83 @@
+{
+    "user_mode": {
+        "lenght": 4,
+        "webhook_url": "https://discord.com/api/webhooks/1526978451909771306/obQIs0jEBJyWcfhqe3Ggab-md-GqKu46sBGv3dpze6fwpPHa_voy_tV7xrJOoLb8AkZR"
+    },
+    "provider": {
+        "0": {
+            "socks_port": 9050,
+            "control_port": 9051,
+            "torcc": "Tor\\torcc0"
+        },
+        "1": {
+            "socks_port": 9052,
+            "control_port": 9053,
+            "torcc": "Tor\\torcc1"
+        },
+        "2": {
+            "socks_port": 9054,
+            "control_port": 9055,
+            "torcc": "Tor\\torcc2"
+        },
+        "3": {
+            "socks_port": 9056,
+            "control_port": 9057,
+            "torcc": "Tor\\torcc3"
+        },
+        "4": {
+            "socks_port": 9058,
+            "control_port": 9059,
+            "torcc": "Tor\\torcc4"
+        },
+        "5": {
+            "socks_port": 9060,
+            "control_port": 9061,
+            "torcc": "Tor\\torcc5"
+        },
+        "6": {
+            "socks_port": 9062,
+            "control_port": 9063,
+            "torcc": "Tor\\torcc6"
+        },
+        "7": {
+            "socks_port": 9064,
+            "control_port": 9065,
+            "torcc": "Tor\\torcc7"
+        },
+        "8": {
+            "socks_port": 9066,
+            "control_port": 9067,
+            "torcc": "Tor\\torcc8"
+        },
+        "9": {
+            "socks_port": 9068,
+            "control_port": 9069,
+            "torcc": "Tor\\torcc9"
+        },
+        "10": {
+            "socks_port": 9070,
+            "control_port": 9071,
+            "torcc": "Tor\\torcc10"
+        },
+        "11": {
+            "socks_port": 9072,
+            "control_port": 9073,
+            "torcc": "Tor\\torcc11"
+        },
+        "12": {
+            "socks_port": 9074,
+            "control_port": 9075,
+            "torcc": "Tor\\torcc12"
+        },
+        "13": {
+            "socks_port": 9076,
+            "control_port": 9077,
+            "torcc": "Tor\\torcc13"
+        },
+        "14": {
+            "socks_port": 9078,
+            "control_port": 9079,
+            "torcc": "Tor\\torcc14"
+        }
+    }
+}
