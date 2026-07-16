@@ -1,7 +1,7 @@
 # 🌕 DNC - Discord Name Checker
 
 DNC est un outil d'automatisation et de vérification multi-threadé qui vous permet de scanner la disponibilité des pseudonymes Discord.
-
+Note : Si l'application tourne en arrière-plan, c'est simplement le client Tor. Si l'application est fermée, vous pouvez arrêter le processus sans craindre
 ---
 
 ## 🚀 Fonctionnalités
