@@ -1,6 +1,6 @@
 curl_cffi
 customtkinter
-discord-webhook
+discord_webhook
 requests
 stem
 PySocks
