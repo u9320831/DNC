@@ -24,7 +24,7 @@ Si vous souhaitez exécuter le projet directement à partir des sources Python (
 
 ### 1. Cloner le dépôt
 ```bash
-git clone [https://github.com/votre-utilisateur/DNC.git](https://github.com/votre-utilisateur/DNC.git)
+git clone git@github.com:u9320831/DNC.git
 cd DNC
 
 ```
