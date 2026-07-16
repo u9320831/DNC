@@ -163,9 +163,11 @@ def display_free_pseudo(pseudo, port):
             try:
                 webhook = DiscordWebhook(
                     url=webhook_url, 
-                    content=f"@everyone `{pseudo}` est LIBRE !",
+                    content="@everyone `fsdfefs` est LIBRE !",
                     username="DNC./",
-                    avatar_url=Path("ico\\pp.png")
+                    avatar_url="https://raw.githubusercontent.com/u9320831/DNC/main/ico/pp.jpg",
+                    color="03b2f8"
+                    
                 )
                 webhook.execute()
             except Exception as e:
