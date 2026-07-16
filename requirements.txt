@@ -3,3 +3,4 @@ customtkinter
 discord-webhook
 requests
 stem
+PySocks
