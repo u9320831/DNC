@@ -6,20 +6,39 @@ import asyncio
 import datetime
 import time
 import json
+import pathlib
 
 ######################################## Modules ########################################
 from engine import Generate, Requests
 from spoof import Spoof, NewNym
 
-with open('config.json','r') as f:
-    data = json.load(f)
+config_path = pathlib.Path("config.json")
 
-free_pseudo = []
+if config_path.exists():
+    try:
+        with open('config.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"[-] Impossible de lire config.json : {e}")
+        data = {}
+else:
+    templates_ = {
+        "user_mode": {
+            "length": 3,
+            "webhook_url": ""
+        },
+        "provider": {}
+    }
 
-result = {
-    "fail": 0,
-    "success": 0
-}
+    try:
+        with open("config.json", "w", encoding='utf-8') as config_file:
+            json.dump(templates_, config_file, indent=4)
+        data = templates_
+        print("[+] Fichier config.json créé avec succès.")
+    except Exception as e:
+        print(f"[-] Erreur lors de la création de config.json : {e}")
+
+
 
 @dataclass
 class Core:
@@ -40,62 +59,88 @@ class Core:
             self.time_start = int(datetime.datetime.today().timestamp())
 
             try:
-                out = asyncio.run(Requests(port=self.port, pseudo=pseudo))
+                out = asyncio.run(Requests(port=self.port, pseudo=pseudo, torcc_path=self.torcc_path))
             except Exception as e:
                 print(f"[-] Erreur inattendue lors de l'exécution de Requests pour {pseudo} (port: {self.port}) : {e}")
                 queue_pseudos.append(pseudo) 
                 time.sleep(2)
                 continue
 
-            status_code = out.get("status")
-            data = out.get("data")
+            status = out.get('status')
+            data = out.get('data', {})
 
-            if status_code == 503:
-                print(f"[#] Réanimation initiée pour le nœud Tor sur le port {self.port}...")
-                queue_pseudos.appendleft(pseudo) 
-                
-                new_pid = Spoof(self.torcc_path, self.port)
-                if new_pid == -1:
-                    print(f"[-] Impossible de réanimer Tor sur le port {self.port}.")
-                    time.sleep(10)
-                continue 
-
-            elif status_code == 429:
-                print(f"[-] Code 429 reçu pour {pseudo} sur le port {self.port}.")
-                queue_pseudos.append(pseudo) 
-                NewNym(self.port, self.control_port, time_start=self.time_start)
-                continue
-
-            elif status_code in (200, 201, 204):
-                if not isinstance(data, dict):
-                    data = {}
-
-                if not data.get("taken"):
-                    print(f"[+] Success : {pseudo} --> Not Used (port: {self.port})")
-                    free_pseudo.append(pseudo)
+            if status in (200, 201, 204):
+                if isinstance(data, dict) and "taken" in data:
+                    if data["taken"] is False:
+                        print(f"[+] Success : {pseudo} --> Libre ! (port: {self.port})")
+                    else:
+                        print(f"[-] Success : {pseudo} --> Déjà pris (port: {self.port})")
                 else:
-                    print(f"[-] Success : {pseudo} --> Already Used (port: {self.port})")
+                    print(f"[!] Réponse invalide de Discord pour {pseudo} (port: {self.port}). Ré-essai...")
+                    queue_pseudos.append(pseudo)
+                    time.sleep(1)
 
-                result["success"] += 1
+            elif status == 429:
+                print(f"[!] Reprise de {pseudo} (remis en file d'attente suite à un Rate Limit)")
+                queue_pseudos.append(pseudo)
+                time.sleep(1)
                 
-                NewNym(self.port, self.control_port, time_start=self.time_start)
-
             else:
-                print(f"[-] Code HTTP inattendu ({status_code}) pour {pseudo} sur le port {self.port}")
-                result["fail"] += 1
+                print(f"[!] Erreur de traitement pour {pseudo} (Status: {status}). Remis en file d'attente.")
+                queue_pseudos.append(pseudo)
+                time.sleep(2)
 
+            result = NewNym(
+                port=self.port, 
+                control_port=self.control_port, 
+                time_start=self.time_start
+            )
 
+            if result == 1:
+                self.time_start = int(time.time())
+            elif result == 0:
+                print(f"[!] Le changement d'IP a timeout sur le port {self.port}. Tentative de Spoof...")
+                Spoof(self.torcc_path, self.port)
+                self.time_start = int(time.time())
 ######################################## Configuration des Cores ########################################
 
-cores = [
-    Core(port=9050, control_port=9051, torcc_path="Tor/torcc1"),
-    Core(port=9052, control_port=9053, torcc_path="Tor/torcc2"),
-    Core(port=9054, control_port=9055, torcc_path="Tor/torcc3"),
-    Core(port=9056, control_port=9057, torcc_path="Tor/torcc4"), 
-    Core(port=9058, control_port=9059, torcc_path="Tor/torcc5"), 
-]
+cores = []
 
-fl_ = Core().dictionnaire(data['lenght'])
+config_path = pathlib.Path("config.json")
+
+if config_path.exists():
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_data = json.load(f)
+            
+        providers = config_data.get("provider", {})
+        
+        for instance_name, settings in providers.items():
+            socks_port = settings.get("socks_port")
+            control_port = settings.get("control_port")
+            torcc_path = settings.get("torcc") 
+            
+            if socks_port and control_port and torcc_path:
+                cores.append(
+                    Core(
+                        port=int(socks_port),
+                        control_port=int(control_port),
+                        torcc_path=str(torcc_path)
+                    )
+                )
+                
+    except Exception as e:
+        print(f"[-] Erreur lors de la lecture des providers dans config.json : {e}")
+else:
+    print("[-] config.json introuvable. Impossible de charger les instances Tor.")
+
+cores.sort(key=lambda c: c.port)
+
+print(f"[+] {len(cores)} Cores Tor chargés depuis config.json :")
+for core in cores:
+    print(f"  -> Port: {core.port} | Control: {core.control_port} | Path: {core.torcc_path}")
+
+fl_ = Core().dictionnaire(data['user_mode']['lenght'])
 
 def chunk_list(lst, num_chunks):
     avg = len(lst) / float(num_chunks)
@@ -126,5 +171,3 @@ def worker(data):
 print("[*] Démarrage du scan multi-threadé...")
 with ThreadPoolExecutor(max_workers=len(cores)) as pool:
     list(pool.map(worker, enumerate(cores)))
-
-print(f"\n[+] Travail terminé. Résultats finaux : {result}\nNot used pseudo : {free_pseudo}")

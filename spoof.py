@@ -4,7 +4,6 @@ from stem import Signal
 from stem.control import Controller
 import time
 import threading
-import datetime
 
 def verif(port: int, timeout_sec: int = 5) -> dict:
     proxies = {
@@ -79,14 +78,17 @@ def Spoof(torcc_path: str, port: int, timeout_sec: int = 30) -> int:
         return -1
 
 def NewNym(port: int, control_port: int, time_start: int, max_wait_ip: int = 15) -> int:
-    nw_time = int(datetime.datetime.today().timestamp())
-    
+    nw_time = int(time.time())
     sleep_duration = 10 - (nw_time - time_start)
     if sleep_duration > 0:
+        print(f"[#] Respect du cooldown Tor : attente de {sleep_duration:.1f}s avant NEWNYM...")
         time.sleep(sleep_duration)
 
-    base_status = verif(port)
-    bs_ip = base_status.get('IP', 'Inconnue')
+    try:
+        base_status = verif(port)
+        bs_ip = base_status.get('IP', 'Inconnue') if isinstance(base_status, dict) else 'Inconnue'
+    except Exception:
+        bs_ip = 'Inconnue'
 
     try:
         with Controller.from_port(port=control_port) as controller:
@@ -94,19 +96,27 @@ def NewNym(port: int, control_port: int, time_start: int, max_wait_ip: int = 15)
             controller.signal(Signal.NEWNYM)
     except Exception as e:
         print(f"[-] Impossible de se connecter au Control Port {control_port} : {e}")
-        return -1
+        return -1 
     
     check_start = time.time()
     while time.time() - check_start < max_wait_ip:
-        nw_status = verif(port)
-        nw_ip = nw_status.get('IP', bs_ip)
+        try:
+            nw_status = verif(port)
+            if not isinstance(nw_status, dict):
+                raise ValueError("Format de réponse invalide")
+                
+            nw_ip = nw_status.get('IP', 'Inconnue')
+        except Exception:
+            print(f"[-] Port {port} temporairement inaccessible (reconstruction du circuit en cours...)")
+            time.sleep(1.5)
+            continue
 
         if nw_ip != bs_ip and nw_ip != 'Inconnue':
-            print(f"[+] Nouvelle ip alloué ({bs_ip} --> {nw_ip})")
-            return 1
+            print(f"[+] Nouvelle IP allouée pour le port {port} ({bs_ip} --> {nw_ip})")
+            return 1 
         else:
-            print(f"[-] Attente du changement d'ip (port : {port}...)")
+            print(f"[-] Attente du changement d'IP (port : {port}, IP actuelle : {nw_ip})...")
             time.sleep(1.5) 
 
     print(f"[-] Échec du changement d'IP (Timeout de {max_wait_ip}s dépassé pour le port {port})")
-    return 0
+    return 0 

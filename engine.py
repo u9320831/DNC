@@ -6,6 +6,10 @@ import asyncio
 import sys
 from curl_cffi.requests import AsyncSession
 
+######################################## Modules ########################################
+
+from spoof import Spoof
+
 def Validity(pseudo : str) -> bool:
     USERNAME_CHARS = string.ascii_lowercase + string.digits + "_" + "."
 
@@ -29,7 +33,7 @@ def Generate(lenght : int) -> list:
     print(f"Listes de pseudos initialisé (longeur :{lenght})")
     return fl
 
-async def Requests(pseudo: str, port: int) -> dict:
+async def Requests(pseudo: str, port: int, torcc_path: str) -> dict:
     BASE_URL = "https://discord.com/api/v9"
     ENDPOINT = "unique-username/username-attempt-unauthed"
     url = f"{BASE_URL}/{ENDPOINT}"
@@ -42,12 +46,12 @@ async def Requests(pseudo: str, port: int) -> dict:
 
     while True:
         try:
-            async with AsyncSession(impersonate="chrome", proxies=proxies, timeout=12) as session:
+            async with AsyncSession(impersonate="chrome", proxies=proxies, timeout=10) as session:
                 response = await session.post(
                     url, 
                     json=payload,
                     headers={"Content-Type": "application/json"} 
-                )
+                ) 
                 
                 if response.status_code == 429:
                     try:
@@ -56,31 +60,48 @@ async def Requests(pseudo: str, port: int) -> dict:
                         retry_after = 5
 
                     if retry_after > 15:
-                        print(f"[-] Rate Limit ({retry_after}s) sur le port {port} pour '{pseudo}'.")
-
-                        return {"status": 429, "data": "RateLimit - IP à changer"}
+                        print(f"[-] Rate Limit trop long ({retry_after}s) sur le port {port} pour '{pseudo}'. Rotation requise.")
+                        return {"status": 429, "data": "RateLimit"}
                     
-                    print(f"[-] Petit Rate Limit détecté sur le port {port}. Pause de {retry_after}s...")
+                    print(f"[-] Rate Limit détecté sur le port {port}. Pause de {retry_after}s...")
                     await asyncio.sleep(retry_after)
+                    continue 
+
+                elif response.status_code == 503:
+                    print(f"[#] Réanimation initiée pour le nœud Tor sur le port {port}...")
+                    new_pid = Spoof(torcc_path, port)
+                    if new_pid == -1:
+                        print(f"[-] Impossible de réanimer Tor sur le port {port}. Pause de 10s...")
+                        await asyncio.sleep(10)
+                    else:
+                        await asyncio.sleep(5)
                     continue
 
-                print(f"[+] Requête envoyée {pseudo} (port: {port}) - Status: {response.status_code}")
-                try:
-                    response_data = response.json()
-                except Exception:
-                    response_data = response.text
-                    
-                return {
-                    "status": response.status_code,
-                    "data": response_data
-                }
+                elif response.status_code in (200, 201, 204):
+                    try:
+                        response_data = response.json()
+                    except Exception:
+                        response_data = {}
+
+                    return {
+                        "status": response.status_code,
+                        "data": response_data
+                    }
+
+                else:
+                    print(f"[-] Code HTTP inattendu ({response.status_code}) pour {pseudo} sur le port {port}. Retry...")
+                    await asyncio.sleep(4)
+                    continue
                 
         except Exception as e:
             error_msg = str(e)
             
-            if "curl: (7)" in error_msg or "Failed to connect" in error_msg:
-                return {"status": 503, "data": "Tor proxy is dead"}
+            if any(x in error_msg for x in ["curl: (7)", "Failed to connect", "timeout", "Timeout"]):
+                print(f"[!] Le proxy Tor sur le port {port} semble mort ou lent. Tentative de réanimation...")
+                new_pid = Spoof(torcc_path, port)
+                await asyncio.sleep(5)
+                continue 
 
-            print(f"[-] Problème réseau temporaire sur le port {port} ('{pseudo}') : Lancement d'une nouvelle tentative...", file=sys.stderr)
+            print(f"[-] Problème réseau temporaire sur le port {port} ('{pseudo}') : {error_msg}. Relancement...", file=sys.stderr)
             await asyncio.sleep(3)
             continue
