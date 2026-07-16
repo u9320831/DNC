@@ -39,6 +39,21 @@ Config_Frame.place(x=10, y=360)
 Provider_Frame = ctk.CTkScrollableFrame(Config_Frame, width=540, height=200)
 Provider_Frame.place(x=210, y=10)
 
+
+def log_to_gui(text, color="white"):
+    def append_label():
+        lbl = ctk.CTkLabel(
+            OutputFrame, 
+            text=text, 
+            text_color=color, 
+            font=("Consolas", 12)
+        )
+        lbl.pack(anchor="w", padx=10, pady=1)
+        OutputFrame._parent_canvas.yview_moveto(1.0)
+    
+    main_windows.after(0, append_label)
+
+
 def load_providers():
     config_path = Path("config.json")
     if not config_path.exists():
@@ -53,7 +68,7 @@ def load_providers():
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(initial_data, f, indent=4)
         except Exception as e:
-            print(f"[-] Erreur de création initiale du JSON : {e}")
+            log_to_gui(f"[-] Erreur de création initiale du JSON : {e}", "#e74c3c")
             return {}
 
     try:
@@ -61,7 +76,7 @@ def load_providers():
             data = json.load(f)
             return data.get("provider", {})
     except Exception as e:
-        print(f"[-] Erreur de lecture du JSON : {e}")
+        log_to_gui(f"[-] Erreur de lecture du JSON : {e}", "#e74c3c")
         return {}
 
 
@@ -96,6 +111,7 @@ def on_create_click():
 
     result = macro.MacroTorcc(str(next_socks), str(next_control), str(next_idx))
     if result == 1:
+        log_to_gui(f"[+] Provider #{next_idx} créé avec succès !", "#2ecc71")
         populate_provider_frame()
 
 
@@ -128,23 +144,18 @@ def on_remove_click():
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
 
+        log_to_gui(f"[-] Provider #{last_idx} supprimé.", "#e67e22")
         populate_provider_frame()
     except Exception as e:
-        print(f"[-] Erreur suppression : {e}")
+        log_to_gui(f"[-] Erreur suppression : {e}", "#e74c3c")
 
 
 def display_free_pseudo(pseudo, port):
-    # 1. Mise à jour de l'interface graphique (Thread-Safe)
-    def update_gui():
-        success_label = ctk.CTkLabel(
-            OutputFrame, 
-            text=f"[+] Success : {pseudo} est LIBRE ! (Port: {port})", 
-            text_color="#2ecc71", 
-            font=("Consolas", 12, "bold")
-        )
-        success_label.pack(anchor="w", padx=10, pady=2)
-    
-    main_windows.after(0, update_gui)
+    if "pris" in pseudo.lower() or "taken" in pseudo.lower():
+        log_to_gui(f"[-] Taken   : {pseudo} (Port: {port})", "#e74c3c")
+        return
+
+    log_to_gui(f"[+] Success : {pseudo} est LIBRE ! (Port: {port})", "#2ecc71")
 
     def send_discord():
         webhook_url = WebhookEntry.get().strip()
@@ -156,9 +167,13 @@ def display_free_pseudo(pseudo, port):
                 )
                 webhook.execute()
             except Exception as e:
-                print(f"[-] Impossible d'envoyer le webhook Discord : {e}")
+                log_to_gui(f"[-] Impossible d'envoyer le webhook Discord : {e}", "#e74c3c")
 
     threading.Thread(target=send_discord, daemon=True).start()
+
+
+def display_taken_pseudo(pseudo, port):
+    log_to_gui(f"[-] Taken   : {pseudo} (Port: {port})", "#e74c3c")
 
 
 def chunk_list(lst, num_chunks):
@@ -189,7 +204,7 @@ def run_scanner_process():
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(config_data, f, indent=4)
     except Exception as e:
-        print(f"[-] Erreur de mise à jour des entrées utilisateur : {e}")
+        log_to_gui(f"[-] Erreur de mise à jour des entrées utilisateur : {e}", "#e74c3c")
         return
 
     cores = []
@@ -210,7 +225,7 @@ def run_scanner_process():
             )
 
     if not cores:
-        print("[-] Aucun core Tor trouvé dans config.json.")
+        log_to_gui("[-] Aucun core Tor trouvé dans config.json.", "#e74c3c")
         return
 
     cores.sort(key=lambda c: c.port)
@@ -218,18 +233,27 @@ def run_scanner_process():
     fl_ = handler.Core().dictionnaire(config_data['user_mode']['lenght'])
     parts = chunk_list(fl_, len(cores))
 
-    print("[*] Lancement et initialisation des processus Tor...")
+    log_to_gui("[*] Lancement et initialisation des processus Tor...", "#3498db")
     for core in cores:
         Spoof(core.torcc_path, core.port)
 
     def worker(data_worker):
         idx, core = data_worker
         try:
-            core.pipeline(parts[idx], on_success_callback=display_free_pseudo)
+            core.pipeline(
+                parts[idx], 
+                on_success_callback=display_free_pseudo,
+                on_attempt_callback=display_taken_pseudo
+            )
+        except TypeError:
+            try:
+                core.pipeline(parts[idx], on_success_callback=display_free_pseudo)
+            except Exception as e:
+                log_to_gui(f"[-] Erreur critique dans le thread {core.port} : {e}", "#e74c3c")
         except Exception as e:
-            print(f"[-] Erreur critique dans le thread {core.port} : {e}", file=sys.stderr)
+            log_to_gui(f"[-] Erreur critique dans le thread {core.port} : {e}", "#e74c3c")
 
-    print("[*] Démarrage du scan multi-threadé...")
+    log_to_gui("[*] Démarrage du scan multi-threadé...", "#3498db")
     with ThreadPoolExecutor(max_workers=len(cores)) as pool:
         list(pool.map(worker, enumerate(cores)))
 
@@ -238,9 +262,7 @@ def on_start_click():
     threading.Thread(target=run_scanner_process, daemon=True).start()
 
 
-
 def load_user_settings():
-    """Lit les configurations existantes de l'utilisateur et remplit les champs si possible."""
     config_path = Path("config.json")
     if config_path.exists():
         try:
@@ -260,7 +282,7 @@ def load_user_settings():
                     WebhookEntry.delete(0, "end")
                     WebhookEntry.insert(0, str(webhook_url))
         except Exception as e:
-            print(f"[-] Impossible de pré-remplir les options utilisateur : {e}")
+            log_to_gui(f"[-] Impossible de pré-remplir les options utilisateur : {e}", "#e74c3c")
 
 
 # ####################################### Controller #######################################

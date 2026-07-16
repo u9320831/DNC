@@ -23,7 +23,7 @@ class Core:
     def dictionnaire(self, length=3):
         return Generate(length)
         
-    def pipeline(self, pseudos: list, on_success_callback=None):
+    def pipeline(self, pseudos: list, on_success_callback=None, on_attempt_callback=None):
         queue_pseudos = deque(pseudos)
 
         while queue_pseudos:
@@ -49,6 +49,8 @@ class Core:
                             on_success_callback(pseudo, self.port)
                     else:
                         print(f"[-] Success : {pseudo} --> Déjà pris (port: {self.port})")
+                        if on_attempt_callback:
+                            on_attempt_callback(pseudo, self.port)
                 else:
                     print(f"[!] Réponse invalide de Discord pour {pseudo} (port: {self.port}). Ré-essai...")
                     queue_pseudos.append(pseudo)
