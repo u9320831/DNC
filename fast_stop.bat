@@ -1,0 +1,1 @@
+taskkill /F /IM tor.exe /T

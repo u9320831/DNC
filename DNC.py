@@ -20,23 +20,6 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-# --- Variables globales pour les Stats ---
-free_count = 0
-taken_count = 0
-total_combinations = 0
-
-def update_stats(is_free=False):
-    global free_count, taken_count
-    if is_free: free_count += 1
-    else: taken_count += 1
-    main_windows.after(0, lambda: FreeLabel.configure(text=str(free_count)))
-    main_windows.after(0, lambda: TakenLabel.configure(text=str(taken_count)))
-
-def update_total(charset, length):
-    global total_combinations
-    total_combinations = len(charset) ** length
-    main_windows.after(0, lambda: TotalLabel.configure(text=str(total_combinations)))
-
 # --- Initialisation UI ---
 main_windows = ctk.CTk()
 main_windows.title("DNC - By 𝗖𝗶𝗿𝗼🌕")
@@ -48,11 +31,6 @@ ctk.set_default_color_theme('blue')
 main_windows.grid_rowconfigure(1, weight=1)
 main_windows.grid_columnconfigure(0, weight=1)
 
-# --- HEADER (Stats) ---
-Header = ctk.CTkFrame(main_windows)
-Header.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
-Header.grid_columnconfigure((0, 1, 2), weight=1)
-
 def create_stat_card(parent, col, title):
     frame = ctk.CTkFrame(parent, height=50)
     frame.grid(row=0, column=col, padx=10, pady=10, sticky="ew")
@@ -62,13 +40,10 @@ def create_stat_card(parent, col, title):
     lbl.grid(row=1, column=0)
     return lbl
 
-FreeLabel = create_stat_card(Header, 0, "PSEUDOS LIBRES")
-TakenLabel = create_stat_card(Header, 1, "DÉJÀ UTILISÉS")
-TotalLabel = create_stat_card(Header, 2, "TOTAL")
-
 # --- OUTPUT & MIDDLE ---
-OutputFrame = ctk.CTkScrollableFrame(main_windows, height=200)
+OutputFrame = ctk.CTkTextbox(main_windows, font=("Consolas", 12))
 OutputFrame.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
+OutputFrame.configure(state="disabled")
 
 Middle_Frame = ctk.CTkFrame(main_windows, height=200)
 Middle_Frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
@@ -91,11 +66,6 @@ SymSwitch.pack(anchor="w")
 
 def on_switch_change():
     charset = get_selected_chars()
-    try:
-        length = int(PseudoEntry.get())
-        update_total(charset, length)
-    except:
-        pass
 
 NumSwitch.configure(command=on_switch_change)
 CharSwitch.configure(command=on_switch_change)
@@ -104,19 +74,11 @@ SymSwitch.configure(command=on_switch_change)
 Provider_Frame = ctk.CTkScrollableFrame(Middle_Frame, height=150, width=300)
 Provider_Frame.pack(side="right", padx=20, pady=10)
 
-# --- Fonctions Logiques ---
 def log_to_gui(text, color="white"):
-    def append_label():
-        lbl = ctk.CTkLabel(
-            OutputFrame, 
-            text=text, 
-            text_color=color, 
-            font=("Consolas", 12)
-        )
-        lbl.pack(anchor="w", padx=10, pady=1)
-        OutputFrame._parent_canvas.yview_moveto(1.0)
-    
-    main_windows.after(0, append_label)
+    OutputFrame.configure(state="normal")
+    OutputFrame.insert("end", text + "\n")
+    OutputFrame.see("end") # Auto-scroll
+    OutputFrame.configure(state="disabled")
 
 def get_selected_chars():
     chars = ""
@@ -295,11 +257,9 @@ async def run_scanner_process():
 def display_free_pseudo(pseudo, port):
     if "pris" in pseudo.lower() or "taken" in pseudo.lower():
         log_to_gui(f"[-] Taken   : {pseudo} (Port: {port})", "#e74c3c")
-        update_stats(is_free=False)
         return
 
     log_to_gui(f"[+] Success : {pseudo} est LIBRE ! (Port: {port})", "#2ecc71")
-    update_stats(is_free=True)
 
     def send_discord():
         webhook_url = WebhookEntry.get().strip()
@@ -321,7 +281,6 @@ def display_free_pseudo(pseudo, port):
 
 def display_taken_pseudo(pseudo, port):
     log_to_gui(f"[-] Taken   : {pseudo} (Port: {port})", "#e74c3c")
-    update_stats(is_free=False)
 
 # --- Footer & Boutons ---
 Footer_Frame = ctk.CTkFrame(main_windows, fg_color="transparent")
@@ -365,17 +324,10 @@ def load_user_settings():
                     if any(c in charset for c in "._"):
                         SymSwitch.select()
                     
-                    # Update total with restored settings
-                    if length:
-                        update_total(charset, length)
         except Exception as e:
             log_to_gui(f"[-] Impossible de pré-remplir les options utilisateur : {e}", "#e74c3c")
 
 populate_provider_frame()
 load_user_settings()
-
-# Initialize total with default values if not set from config
-if total_combinations == 0:
-    on_switch_change()
 
 main_windows.mainloop()

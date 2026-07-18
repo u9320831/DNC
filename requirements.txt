@@ -4,3 +4,5 @@ discord_webhook
 requests
 stem
 PySocks
+aiohttp
+aiohttp-socks

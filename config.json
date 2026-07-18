@@ -1,0 +1,259 @@
+{
+    "user_mode": {
+        "lenght": 4,
+        "webhook_url": "",
+        "charset": "0123456789"
+    },
+    "provider": {
+        "0": {
+            "socks_port": 9050,
+            "control_port": 9051,
+            "torcc": "Tor\\torcc0"
+        },
+        "1": {
+            "socks_port": 9052,
+            "control_port": 9053,
+            "torcc": "Tor\\torcc1"
+        },
+        "2": {
+            "socks_port": 9054,
+            "control_port": 9055,
+            "torcc": "Tor\\torcc2"
+        },
+        "3": {
+            "socks_port": 9056,
+            "control_port": 9057,
+            "torcc": "Tor\\torcc3"
+        },
+        "4": {
+            "socks_port": 9058,
+            "control_port": 9059,
+            "torcc": "Tor\\torcc4"
+        },
+        "5": {
+            "socks_port": 9060,
+            "control_port": 9061,
+            "torcc": "Tor\\torcc5"
+        },
+        "6": {
+            "socks_port": 9062,
+            "control_port": 9063,
+            "torcc": "Tor\\torcc6"
+        },
+        "7": {
+            "socks_port": 9064,
+            "control_port": 9065,
+            "torcc": "Tor\\torcc7"
+        },
+        "8": {
+            "socks_port": 9066,
+            "control_port": 9067,
+            "torcc": "Tor\\torcc8"
+        },
+        "9": {
+            "socks_port": 9068,
+            "control_port": 9069,
+            "torcc": "Tor\\torcc9"
+        },
+        "10": {
+            "socks_port": 9070,
+            "control_port": 9071,
+            "torcc": "Tor\\torcc10"
+        },
+        "11": {
+            "socks_port": 9072,
+            "control_port": 9073,
+            "torcc": "Tor\\torcc11"
+        },
+        "12": {
+            "socks_port": 9074,
+            "control_port": 9075,
+            "torcc": "Tor\\torcc12"
+        },
+        "13": {
+            "socks_port": 9076,
+            "control_port": 9077,
+            "torcc": "Tor\\torcc13"
+        },
+        "14": {
+            "socks_port": 9078,
+            "control_port": 9079,
+            "torcc": "Tor\\torcc14"
+        },
+        "15": {
+            "socks_port": 9080,
+            "control_port": 9081,
+            "torcc": "Tor\\torcc15"
+        },
+        "16": {
+            "socks_port": 9082,
+            "control_port": 9083,
+            "torcc": "Tor\\torcc16"
+        },
+        "17": {
+            "socks_port": 9084,
+            "control_port": 9085,
+            "torcc": "Tor\\torcc17"
+        },
+        "18": {
+            "socks_port": 9086,
+            "control_port": 9087,
+            "torcc": "Tor\\torcc18"
+        },
+        "19": {
+            "socks_port": 9088,
+            "control_port": 9089,
+            "torcc": "Tor\\torcc19"
+        },
+        "20": {
+            "socks_port": 9090,
+            "control_port": 9091,
+            "torcc": "Tor\\torcc20"
+        },
+        "21": {
+            "socks_port": 9092,
+            "control_port": 9093,
+            "torcc": "Tor\\torcc21"
+        },
+        "22": {
+            "socks_port": 9094,
+            "control_port": 9095,
+            "torcc": "Tor\\torcc22"
+        },
+        "23": {
+            "socks_port": 9096,
+            "control_port": 9097,
+            "torcc": "Tor\\torcc23"
+        },
+        "24": {
+            "socks_port": 9098,
+            "control_port": 9099,
+            "torcc": "Tor\\torcc24"
+        },
+        "25": {
+            "socks_port": 9100,
+            "control_port": 9101,
+            "torcc": "Tor\\torcc25"
+        },
+        "26": {
+            "socks_port": 9102,
+            "control_port": 9103,
+            "torcc": "Tor\\torcc26"
+        },
+        "27": {
+            "socks_port": 9104,
+            "control_port": 9105,
+            "torcc": "Tor\\torcc27"
+        },
+        "28": {
+            "socks_port": 9106,
+            "control_port": 9107,
+            "torcc": "Tor\\torcc28"
+        },
+        "29": {
+            "socks_port": 9108,
+            "control_port": 9109,
+            "torcc": "Tor\\torcc29"
+        },
+        "30": {
+            "socks_port": 9110,
+            "control_port": 9111,
+            "torcc": "Tor\\torcc30"
+        },
+        "31": {
+            "socks_port": 9112,
+            "control_port": 9113,
+            "torcc": "Tor\\torcc31"
+        },
+        "32": {
+            "socks_port": 9114,
+            "control_port": 9115,
+            "torcc": "Tor\\torcc32"
+        },
+        "33": {
+            "socks_port": 9116,
+            "control_port": 9117,
+            "torcc": "Tor\\torcc33"
+        },
+        "34": {
+            "socks_port": 9118,
+            "control_port": 9119,
+            "torcc": "Tor\\torcc34"
+        },
+        "35": {
+            "socks_port": 9120,
+            "control_port": 9121,
+            "torcc": "Tor\\torcc35"
+        },
+        "36": {
+            "socks_port": 9122,
+            "control_port": 9123,
+            "torcc": "Tor\\torcc36"
+        },
+        "37": {
+            "socks_port": 9124,
+            "control_port": 9125,
+            "torcc": "Tor\\torcc37"
+        },
+        "38": {
+            "socks_port": 9126,
+            "control_port": 9127,
+            "torcc": "Tor\\torcc38"
+        },
+        "39": {
+            "socks_port": 9128,
+            "control_port": 9129,
+            "torcc": "Tor\\torcc39"
+        },
+        "40": {
+            "socks_port": 9130,
+            "control_port": 9131,
+            "torcc": "Tor\\torcc40"
+        },
+        "41": {
+            "socks_port": 9132,
+            "control_port": 9133,
+            "torcc": "Tor\\torcc41"
+        },
+        "42": {
+            "socks_port": 9134,
+            "control_port": 9135,
+            "torcc": "Tor\\torcc42"
+        },
+        "43": {
+            "socks_port": 9136,
+            "control_port": 9137,
+            "torcc": "Tor\\torcc43"
+        },
+        "44": {
+            "socks_port": 9138,
+            "control_port": 9139,
+            "torcc": "Tor\\torcc44"
+        },
+        "45": {
+            "socks_port": 9140,
+            "control_port": 9141,
+            "torcc": "Tor\\torcc45"
+        },
+        "46": {
+            "socks_port": 9142,
+            "control_port": 9143,
+            "torcc": "Tor\\torcc46"
+        },
+        "47": {
+            "socks_port": 9144,
+            "control_port": 9145,
+            "torcc": "Tor\\torcc47"
+        },
+        "48": {
+            "socks_port": 9146,
+            "control_port": 9147,
+            "torcc": "Tor\\torcc48"
+        },
+        "49": {
+            "socks_port": 9148,
+            "control_port": 9149,
+            "torcc": "Tor\\torcc49"
+        }
+    }
+}
