@@ -13,9 +13,23 @@ ControlPort {TorControlPort}
 GeoIPFile Tor\\geoip
 GeoIPv6File Tor\\geoip6
 DataDirectory Tor\\data{idx}
+
+# Optimisation Performance
+LearnCircuitBuildTimeout 0
+CircuitBuildTimeout 5
+NumEntryGuards 1
+KeepalivePeriod 60
+
+# Gestion de la Rotation (Moins agressif pour le process)
+MaxCircuitDirtiness 60
+NewCircuitPeriod 30
+
+# Réduction de la verbosité pour gagner en CPU
+Log notice stdout
+DisableDebuggerAttachment 1
+
+# Divers
 EnforceDistinctSubnets 0
-MaxCircuitDirtiness 5
-NewCircuitPeriod 5
 """
     tor_dir.mkdir(exist_ok=True)
 

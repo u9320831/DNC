@@ -195,71 +195,64 @@ def chunk_list(lst, num_chunks):
 def run_scanner_process():
     config_path = Path("config.json")
     
+    # ... (Garde ton chargement de config intact) ...
     try:
-        length_val = int(PseudoEntry.get()) if PseudoEntry.get().isdigit() else 4
-        webhook_val = WebhookEntry.get().strip()
-
         with open(config_path, "r", encoding="utf-8") as f:
             config_data = json.load(f)
-        
-        config_data["user_mode"]["lenght"] = length_val
-        config_data["user_mode"]["webhook_url"] = webhook_val
-
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(config_data, f, indent=4)
+        # Mise à jour des valeurs...
     except Exception as e:
-        log_to_gui(f"[-] Erreur de mise à jour des entrées utilisateur : {e}", "#e74c3c")
+        log_to_gui(f"[-] Erreur config : {e}", "#e74c3c")
         return
 
     cores = []
     providers = config_data.get("provider", {})
     
     for instance_name, settings in providers.items():
-        socks_port = settings.get("socks_port")
-        control_port = settings.get("control_port")
-        torcc_path = settings.get("torcc")
-        
-        if socks_port and control_port and torcc_path:
-            cores.append(
-                handler.Core(
-                    port=int(socks_port),
-                    control_port=int(control_port),
-                    torcc_path=str(torcc_path)
-                )
-            )
+        # ... (Garde ta logique de création de liste cores) ...
+        cores.append(handler.Core(port=int(settings["socks_port"]), control_port=int(settings["control_port"]), torcc_path=str(settings["torcc"])))
 
     if not cores:
-        log_to_gui("[-] Aucun core Tor trouvé dans config.json.", "#e74c3c")
+        log_to_gui("[-] Aucun core Tor trouvé.", "#e74c3c")
         return
 
-    cores.sort(key=lambda c: c.port)
+    # Préparation des pseudos
+    fl_ = handler.Core().gen_dict(config_data['user_mode']['lenght'])
+    parts = chunk_list(list(fl_), len(cores))
 
-    fl_ = handler.Core().dictionnaire(config_data['user_mode']['lenght'])
-    parts = chunk_list(fl_, len(cores))
-
-    log_to_gui("[*] Lancement et initialisation des processus Tor...", "#3498db")
+    log_to_gui("[*] Lancement des processus Tor...", "#3498db")
     for core in cores:
         Spoof(core.torcc_path, core.port)
 
+    # CORRECTION : Le worker est simple, il exécute juste le pipeline
     def worker(data_worker):
         idx, core = data_worker
         try:
             core.pipeline(
                 parts[idx], 
-                on_success_callback=display_free_pseudo,
-                on_attempt_callback=display_taken_pseudo
+                tpl_name="discord", # Vérifie que ce template existe dans /templates
+                on_success=display_free_pseudo,
+                on_taken=display_taken_pseudo
             )
-        except TypeError:
-            try:
-                core.pipeline(parts[idx], on_success_callback=display_free_pseudo)
-            except Exception as e:
-                log_to_gui(f"[-] Erreur critique dans le thread {core.port} : {e}", "#e74c3c")
         except Exception as e:
-            log_to_gui(f"[-] Erreur critique dans le thread {core.port} : {e}", "#e74c3c")
+            log_to_gui(f"[-] Erreur dans le thread {core.port} : {e}", "#e74c3c")
 
     log_to_gui("[*] Démarrage du scan multi-threadé...", "#3498db")
+    
+    # C'est ici que le multithreading est géré proprement
     with ThreadPoolExecutor(max_workers=len(cores)) as pool:
-        list(pool.map(worker, enumerate(cores)))
+        pool.map(worker, enumerate(cores))
+
+    def worker(data_worker):
+        idx, core = data_worker
+        # Utilise 'on_success' et 'on_taken' au lieu de '_callback'
+        core.pipeline(
+            parts[idx], 
+            tpl_name="default", # Assure-toi d'avoir un template nommé 'default' ou change ici
+            on_success=display_free_pseudo,
+            on_taken=display_taken_pseudo)
+        log_to_gui("[*] Démarrage du scan multi-threadé...", "#3498db")
+        with ThreadPoolExecutor(max_workers=len(cores)) as pool:
+            list(pool.map(worker, enumerate(cores)))
 
 
 def on_start_click():

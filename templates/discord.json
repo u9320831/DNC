@@ -1,0 +1,24 @@
+{
+  "name": "discord",
+  "url": "https://discord.com/api/v9/unique-username/username-attempt-unauthed",
+  "method": "POST",
+  "params": null,
+  "headers": {},
+  "payload": {
+    "username": "{pseudo}"
+  },
+  "expected_status": [200, 201, 204, 400, 429, 503],
+  "response_format": "json",
+  "browser": "chrome",
+  "max_retries": 1,
+  "retry_delay": 2.0,
+  "timeout": 10,
+  "status_map": {
+    "200": "taken",
+    "201": "taken",
+    "204": "available",
+    "400": "invalid",
+    "429": "rate_limited",
+    "503": "proxy_dead"
+  }
+}
