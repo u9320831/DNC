@@ -6,11 +6,12 @@ from concurrent.futures import ThreadPoolExecutor
 import customtkinter as ctk
 import sys
 from discord_webhook import DiscordWebhook
+import asyncio
 import os
 
 import macro
 import handler
-from spoof import Spoof
+import spoof
 
 def resource_path(relative_path):
     try:
@@ -191,73 +192,75 @@ def chunk_list(lst, num_chunks):
         last += avg
     return out
 
-
-def run_scanner_process():
+async def run_scanner_process():
     config_path = Path("config.json")
-    
-    # ... (Garde ton chargement de config intact) ...
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             config_data = json.load(f)
-        # Mise à jour des valeurs...
     except Exception as e:
-        log_to_gui(f"[-] Erreur config : {e}", "#e74c3c")
+        # Assure-toi que log_to_gui est accessible ici
+        print(f"[-] Erreur config : {e}") 
         return
 
-    cores = []
-    providers = config_data.get("provider", {})
+    instances_data = []
+    cores_map = {} # IMPORTANT: Map pour lier instance -> core
     
-    for instance_name, settings in providers.items():
-        # ... (Garde ta logique de création de liste cores) ...
-        cores.append(handler.Core(port=int(settings["socks_port"]), control_port=int(settings["control_port"]), torcc_path=str(settings["torcc"])))
+    # 2. Préparation des instances
+    for idx, (name, settings) in enumerate(config_data.get("provider", {}).items()):
+        port = int(settings["socks_port"])
+        torcc = str(settings["torcc"])
+        
+        # Lancement du processus via ton outil spoof
+        spoof.Spoof(torcc, port)
+        
+        # Création de l'instance pour le Pool
+        instances_data.append(spoof.TorInstance(
+            idx=idx,
+            socks_port=port,
+            control_port=int(settings["control_port"]),
+            control_cookie_path=settings.get("cookie_path")
+        ))
+        
+        # Initialisation du Core dédié à cette instance
+        cores_map[idx] = handler.Core(
+            port=port, 
+            control_port=int(settings["control_port"]), 
+            torcc_path=torcc
+        )
 
-    if not cores:
-        log_to_gui("[-] Aucun core Tor trouvé.", "#e74c3c")
-        return
+    # 3. Définition du handler (Pont entre Pool et ton Pipeline)
+    async def task_handler(session, instance, task):
+            core = cores_map[instance.idx]
+            
+            # Comme core.pipeline est déjà async, on l'appelle directement avec await.
+            # Plus besoin de 'loop.run_in_executor' ni de 'run_blocking_logic'.
+            try:
+                await core.pipeline(
+                    task["pseudo"], 
+                    tpl_name="discord",
+                    on_success=display_free_pseudo,
+                    on_taken=display_taken_pseudo
+                )
+            except Exception as e:
+                print(f"[!] Erreur dans le task_handler : {e}")
 
-    # Préparation des pseudos
-    fl_ = handler.Core().gen_dict(config_data['user_mode']['lenght'])
-    parts = chunk_list(list(fl_), len(cores))
-
-    log_to_gui("[*] Lancement des processus Tor...", "#3498db")
-    for core in cores:
-        Spoof(core.torcc_path, core.port)
-
-    # CORRECTION : Le worker est simple, il exécute juste le pipeline
-    def worker(data_worker):
-        idx, core = data_worker
-        try:
-            core.pipeline(
-                parts[idx], 
-                tpl_name="discord", # Vérifie que ce template existe dans /templates
-                on_success=display_free_pseudo,
-                on_taken=display_taken_pseudo
-            )
-        except Exception as e:
-            log_to_gui(f"[-] Erreur dans le thread {core.port} : {e}", "#e74c3c")
-
-    log_to_gui("[*] Démarrage du scan multi-threadé...", "#3498db")
+    # 4. Initialisation et lancement du Pool
+    pool = spoof.TorPool(instances_data, task_handler)
     
-    # C'est ici que le multithreading est géré proprement
-    with ThreadPoolExecutor(max_workers=len(cores)) as pool:
-        pool.map(worker, enumerate(cores))
-
-    def worker(data_worker):
-        idx, core = data_worker
-        # Utilise 'on_success' et 'on_taken' au lieu de '_callback'
-        core.pipeline(
-            parts[idx], 
-            tpl_name="default", # Assure-toi d'avoir un template nommé 'default' ou change ici
-            on_success=display_free_pseudo,
-            on_taken=display_taken_pseudo)
-        log_to_gui("[*] Démarrage du scan multi-threadé...", "#3498db")
-        with ThreadPoolExecutor(max_workers=len(cores)) as pool:
-            list(pool.map(worker, enumerate(cores)))
-
+    # Génération des pseudos
+    # On récupère le 1er Core pour générer la liste (ou ta méthode habituelle)
+    pseudos = handler.Core().gen_dict(config_data['user_mode']['lenght'])
+    
+    # Remplissage
+    for p in pseudos:
+            pool.add_task({"pseudo": p})
+    
+    # Lancement
+    await pool.run(workers_per_instance=2)
 
 def on_start_click():
-    threading.Thread(target=run_scanner_process, daemon=True).start()
-
+    print("DEBUG: Bouton Start cliqué !") # Ajoute cette ligne
+    threading.Thread(target=lambda: asyncio.run(run_scanner_process()), daemon=True).start()
 
 def load_user_settings():
     config_path = Path("config.json")

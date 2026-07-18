@@ -1,22 +1,15 @@
-import datetime
 import pathlib
-import time
-from collections import deque
+import asyncio
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional
-import asyncio
-
 import engine
-import spoof
 from engine import Generate
-from spoof import NewNym, Spoof
 
 @dataclass
 class Core:
     port: int = 0
     control_port: int = 0
     torcc_path: str = ""
-    t_start: int = 0
     tpls: Dict[str, engine.RequestTemplate] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -32,9 +25,11 @@ class Core:
             return Generate(length, **charset_opts)
         return Generate(length)
 
-    def pipeline(
+    # Note: On a transformé 'pipeline' pour gérer un SEUL pseudo, 
+    # car le TorPool gère la distribution de la liste pour toi.
+    async def pipeline(
         self,
-        pseudos: list,
+        pseudo: str,
         tpl_name: str,
         on_success: Optional[Callable[[str, int], None]] = None,
         on_taken: Optional[Callable[[str, int], None]] = None,
@@ -44,42 +39,28 @@ class Core:
             print(f"[-] Template '{tpl_name}' not found.")
             return
 
-        q = deque(pseudos)
-        while q:
-            username = q.popleft()
-            self.t_start = int(datetime.datetime.today().timestamp())
+        # On attend directement la fonction async du moteur (sans asyncio.run)
+        out = await engine.run_template(
+            template=tpl,
+            pseudo=pseudo,
+            port=self.port,
+            control_port=self.control_port,
+        )
 
-            try:
-                out = asyncio.run(
-                    engine.run_template(
-                        template=tpl,
-                        pseudo=username,
-                        port=self.port,
-                        control_port=self.control_port,
-                    )
-                )
-            except Exception as e:
-                print(f"[!] Error {username} (Port: {self.port}): {e}")
-                q.append(username)
-                time.sleep(2)
-                continue
-
-            status = out.get("status")
-            if status == "available":
-                if on_success: on_success(username, self.port)
-            elif status == "taken":
-                if on_taken: on_taken(username, self.port)
-            elif status == "rate_limited":
-                q.append(username)
-                time.sleep(1)
-            else:
-                q.append(username)
-                time.sleep(2)
-
-            # Rotation Tor
-            res = NewNym(self.control_port)
-            if res:
-                self.t_start = int(time.time())
-            else:
-                Spoof(self.torcc_path, self.port)
-                self.t_start = int(time.time())
+        status = out.get("status")
+        
+        if status == "available":
+            if on_success: on_success(pseudo, self.port)
+            return True # Succès
+            
+        elif status == "taken":
+            if on_taken: on_taken(pseudo, self.port)
+            return True # Succès (le scan a fonctionné)
+            
+        elif status == "rate_limited":
+            # On lève une exception pour que le TorPool détecte l'erreur
+            # et déclenche automatiquement un NEWNYM
+            raise Exception("Rate limited")
+            
+        else:
+            raise Exception(f"Unknown status: {status}")

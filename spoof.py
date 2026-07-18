@@ -1,18 +1,21 @@
+import asyncio
 import subprocess
-import requests
-from stem import Signal
-from stem.control import Controller
-import threading
+import logging
+import aiohttp
+import socket
+from aiohttp_socks import ProxyConnector
+from dataclasses import dataclass, field
+from typing import Any, Awaitable, Callable, Optional
 
-def verif(port: int, timeout_sec: int = 5) -> dict:
-    proxies = {"http": f"socks5h://127.0.0.1:{port}", "https": f"socks5h://127.0.0.1:{port}"}
-    try:
-        r = requests.get("https://check.torproject.org/api/ip", proxies=proxies, timeout=timeout_sec)
-        return r.json()
-    except Exception:
-        return {}
+# --- Configuration Logging ---
+logger = logging.getLogger("spoof")
+
+# ==========================================
+# 1. Gestion des processus Tor (Original)
+# ==========================================
 
 def Spoof(torcc_path: str, port: int) -> int:
+    """Lance le processus Tor."""
     try:
         process = subprocess.Popen(
             ["Tor\\tor.exe", "-f", torcc_path],
@@ -22,41 +25,94 @@ def Spoof(torcc_path: str, port: int) -> int:
         )
         return process.pid
     except Exception as e:
-        print(f"[-] Erreur Tor {port} : {e}")
+        print(f"[-] Erreur de lancement Tor sur le port {port} : {e}")
         return -1
 
-_CONTROLLERS = {}
-_LOCKS = {}
+# ==========================================
+# 2. Framework Asynchrone (Intégré)
+# ==========================================
 
-def get_controller(control_port: int):
-    """Récupère le contrôleur en cache ou en crée un si nécessaire."""
-    if control_port not in _CONTROLLERS:
-        # Création d'un verrou pour éviter les collisions si plusieurs threads appellent en même temps
-        _LOCKS[control_port] = threading.Lock()
-        
-        try:
-            ctrl = Controller.from_port(port=control_port)
-            ctrl.authenticate()
-            _CONTROLLERS[control_port] = ctrl
-        except Exception as e:
-            print(f"[-] Erreur de connexion au contrôleur {control_port} : {e}")
-            return None
-            
-    return _CONTROLLERS[control_port]
+@dataclass
+class TorInstance:
+    idx: int
+    socks_port: int
+    control_port: int
+    control_password: Optional[str] = None
+    control_cookie_path: Optional[str] = None
+    max_concurrency: int = 5
 
-def NewNym(control_port: int) -> bool:
-    """Envoie le signal sans fermer la connexion."""
-    with _LOCKS.get(control_port, threading.Lock()): # Utilise le verrou associé au port
+    @property
+    def proxy_url(self) -> str:
+        return f"socks5://127.0.0.1:{self.socks_port}"
+
+class TorController:
+    def __init__(self, instance: TorInstance):
+        self.instance = instance
+
+    async def _send(self, writer, reader, line: str) -> str:
+        writer.write((line + "\r\n").encode())
+        await writer.drain()
+        data = await reader.readline()
+        return data.decode(errors="replace").strip()
+
+    async def new_identity(self) -> None:
         try:
-            ctrl = get_controller(control_port)
-            if ctrl and ctrl.is_alive():
-                ctrl.signal(Signal.NEWNYM)
-                return True
+            reader, writer = await asyncio.open_connection("127.0.0.1", self.instance.control_port)
+            # Authentification simplifiée
+            if self.instance.control_cookie_path:
+                with open(self.instance.control_cookie_path, "rb") as f:
+                    cookie_hex = f.read().hex()
+                await self._send(writer, reader, f"AUTHENTICATE {cookie_hex}")
             else:
-                # Si le contrôleur est mort, on tente de le supprimer pour qu'il soit recréé au prochain appel
-                if control_port in _CONTROLLERS:
-                    del _CONTROLLERS[control_port]
-                return False
+                await self._send(writer, reader, "AUTHENTICATE")
+            
+            await self._send(writer, reader, "SIGNAL NEWNYM")
+            writer.close()
+            await writer.wait_closed()
         except Exception as e:
-            print(f"[-] Erreur lors du signal NewNym sur le port {control_port} : {e}")
-            return False
+            logger.error(f"Erreur NEWNYM instance {self.instance.idx}: {e}")
+
+class TorPool:
+    def __init__(self, instances: list[TorInstance], handler: Callable):
+        self.instances = instances
+        self.handler = handler
+        self.queue: asyncio.Queue = asyncio.Queue()
+        self.results = []
+        self._stop_sentinel = object()
+
+    def add_task(self, task: dict):
+        self.queue.put_nowait(task)
+
+    async def _worker(self, instance: TorInstance):
+        connector = ProxyConnector.from_url(instance.proxy_url)
+        async with aiohttp.ClientSession(connector=connector) as session:
+            sem = asyncio.Semaphore(instance.max_concurrency)
+            while True:
+                task = await self.queue.get()
+                if task is self._stop_sentinel:
+                    self.queue.task_done()
+                    break
+                async with sem:
+                    try:
+                        res = await self.handler(session, instance, task)
+                        self.results.append(res)
+                    except Exception as e:
+                        # Auto NEWNYM en cas d'erreur
+                        await TorController(instance).new_identity()
+                        self.results.append({"error": str(e), "task": task})
+                self.queue.task_done()
+
+    async def run(self, workers_per_instance: int = 1):
+        tasks = [asyncio.create_task(self._worker(inst)) 
+                 for inst in self.instances for _ in range(workers_per_instance)]
+        await self.queue.join()
+        for _ in tasks: self.queue.put_nowait(self._stop_sentinel)
+        await asyncio.gather(*tasks)
+        return self.results
+    
+def NewNym(control_port: int):
+    try:
+        with socket.create_connection(("127.0.0.1", control_port)) as sock:
+            sock.sendall(b"AUTHENTICATE\r\nSIGNAL NEWNYM\r\n")
+    except Exception as e:
+        print(f"[-] Erreur dans spoof.NewNym (Port {control_port}): {e}")
