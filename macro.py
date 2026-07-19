@@ -10,22 +10,28 @@ def MacroTorcc(TorPort: str, TorControlPort: str, idx: str) -> int:
     # Correction du template (CookieAuthentication à 0 pour faciliter la vie de stem)
     templates = f"""SocksPort {TorPort}
 ControlPort {TorControlPort}
-GeoIPFile Tor\\geoip
-GeoIPv6File Tor\\geoip6
-DataDirectory Tor\\data{idx}
+GeoIPFile Tor/geoip
+GeoIPv6File Tor/geoip6
+DataDirectory Tor/data{idx}
+CookieAuthentication 0
 
-# Optimisation Performance
+# Optimisation Performance Extrême
+HardwareAccel 1
+AvoidDiskWrites 1
+ClientUseIPv6 0
+
+# Gestion des Circuits et Timeouts
 LearnCircuitBuildTimeout 0
-CircuitBuildTimeout 5
+CircuitBuildTimeout 10
 NumEntryGuards 1
 KeepalivePeriod 60
 
-# Gestion de la Rotation (Moins agressif pour le process)
+# Gestion de la Rotation
 MaxCircuitDirtiness 60
 NewCircuitPeriod 30
 
 # Réduction de la verbosité pour gagner en CPU
-Log notice stdout
+Log warn stdout
 DisableDebuggerAttachment 1
 
 # Divers

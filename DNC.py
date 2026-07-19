@@ -13,18 +13,10 @@ import macro
 import engine
 from discord_webhook import DiscordWebhook
 
-def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS
-    except AttributeError:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
-
 # --- Initialisation UI ---
 main_windows = ctk.CTk()
 main_windows.title("DNC - By 𝗖𝗶𝗿𝗼🌕")
 main_windows.geometry("800x650")
-main_windows.iconbitmap(resource_path("ico\\main.ico"))
 ctk.set_appearance_mode('dark')
 ctk.set_default_color_theme('blue')
 
@@ -232,18 +224,21 @@ async def run_scanner_process():
             torcc_path=torcc
         )
 
-    async def task_handler(session, instance, task):
+    async def task_handler(session, instance, task, queue):
             core = cores_map[instance.idx]
+            pseudo = task["pseudo"]
             
             try:
                 await core.pipeline(
-                    task["pseudo"], 
+                    pseudo, 
                     tpl_name="discord",
                     on_success=display_free_pseudo,
                     on_taken=display_taken_pseudo
                 )
             except Exception as e:
-                print(f"[!] Erreur dans le task_handler : {e}")
+                print(f"[!] Échec temporaire pour {pseudo} ({e}) -> Remis en fin de file.")
+                
+                pool.add_task({"pseudo": pseudo})
 
     pool = spoof.TorPool(instances_data, task_handler)
     
@@ -252,7 +247,7 @@ async def run_scanner_process():
     for pseudo in generator:
         pool.add_task({"pseudo": pseudo})
     
-    await pool.run(workers_per_instance=2)
+    await pool.run(workers_per_instance=25)
 
 def display_free_pseudo(pseudo, port):
     if "pris" in pseudo.lower() or "taken" in pseudo.lower():

@@ -7,13 +7,12 @@ import string
 from dataclasses import dataclass, field
 from typing import Any, Dict, Literal, Optional
 from curl_cffi.requests import AsyncSession, RequestsError
+import re
+import base64
 
 import spoof
 
-BROWSER_FINGERPRINTS = [
-    "chrome110", "chrome120", "edge110", "edge120", 
-    "safari15_5", "safari16_0", "safari17_0", "firefox110"
-]
+BROWSER_FINGERPRINTS = ["chrome124", "safari17_0"]
 
 class Generate:
     def __init__(self, length: int, charset: str = string.ascii_lowercase + string.digits):
@@ -66,31 +65,87 @@ def _inject_variables(value: Any, variables: Dict[str, Any]) -> Any:
     elif isinstance(value, list): return [_inject_variables(v, variables) for v in value]
     return value
 
+def get_dynamic_headers(browser_fingerprint: str) -> dict:
+    version = re.search(r'\d+', browser_fingerprint).group() if re.search(r'\d+', browser_fingerprint) else "124"
+    languages = ["fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7", "en-US,en;q=0.9", "es-ES,es;q=0.9,en;q=0.8"]
+    
+    properties = {
+        "os": "Windows",
+        "release_channel": "stable",
+        "client_version": "1.0.9031",
+        "os_version": "10.0.22621",
+        "os_arch": "x64",
+        "system_locale": "fr",
+    }
+
+    json_str = json.dumps(properties, separators=(',', ':'))
+    encoded_properties = base64.b64encode(json_str.encode()).decode()
+
+    headers = {
+        "X-Super-Properties": encoded_properties,
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "User-Agent": f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version}.0.0.0 Safari/537.36",
+        "sec-ch-ua": f'"Chromium";v="{version}", "Google Chrome";v="{version}"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "Referer": "https://discord.com/",
+        "Origin": "https://discord.com",
+        "Accept": "*/*",
+        "Accept-Language": random.choice(languages), # Aléatoire
+        "Connection": "keep-alive",
+        "Cache-Control": "no-cache", # Moins suspect pour un bot
+        "Pragma": "no-cache"
+    }
+    return headers
+
 class SessionWrapper:
     def __init__(self, port: int, browser: str):
         self.port = port
-        self.browser = browser
+        self.browser = browser 
         self.proxy = f"socks5h://127.0.0.1:{port}"
-        self.session = AsyncSession(impersonate=browser, proxies={"http": self.proxy, "https": self.proxy})
+        self.headers = get_dynamic_headers(self.browser)
+        self.session = AsyncSession(
+            impersonate=self.browser, 
+            proxies={"http": self.proxy, "https": self.proxy},
+            headers=self.headers,
+            timeout=20 
+        )
         self.request_count = 0
         self.max_requests_per_session = 100
 
     async def request(self, **kwargs):
-        self.request_count += 1
-        if self.request_count > self.max_requests_per_session:
-            await self.reset()
-        return await self.session.request(**kwargs)
+            self.request_count += 1
+            
+            if self.request_count > self.max_requests_per_session:
+                await self.reset()
+
+            try:
+                out = await self.session.request(**kwargs)
+                return out
+                
+            except Exception as e:
+                raise e 
+                
+            finally:
+                if hasattr(self.session, 'cookies'):
+                    self.session.cookies.clear()
 
     async def reset(self):
         try: await self.session.close()
         except: pass
-        new_browser = random.choice(BROWSER_FINGERPRINTS)
-        self.browser = new_browser
-        self.session = AsyncSession(impersonate=new_browser, proxies={"http": self.proxy, "https": self.proxy})
+        self.browser = random.choice(BROWSER_FINGERPRINTS)
+        self.headers = get_dynamic_headers(self.browser)
+        self.session = AsyncSession(
+            impersonate=self.browser, 
+            proxies={"http": self.proxy, "https": self.proxy},
+            headers=self.headers,
+            timeout=30
+        )
         self.request_count = 0
 
 class RequestEngine:
-    def __init__(self, total_concurrency: int = 150):
+    def __init__(self, total_concurrency: int = 200):
         self.semaphore = asyncio.Semaphore(total_concurrency)
         self.sessions: Dict[int, SessionWrapper] = {}
         self.locks: Dict[int, asyncio.Lock] = {}
@@ -106,50 +161,58 @@ class RequestEngine:
         return self.sessions[port]
 
     async def execute(self, template, pseudo, port, control_port, variables):
-        url = _inject_variables(template.url, variables)
-        params = _inject_variables(template.params, variables) if template.params else None
-        headers = _inject_variables(template.headers, variables) if template.headers else None
-        payload = _inject_variables(template.payload, variables) if template.payload else None
+            url = _inject_variables(template.url, variables)
+            params = _inject_variables(template.params, variables) if template.params else None
+            headers = _inject_variables(template.headers, variables) if template.headers else None
+            payload = _inject_variables(template.payload, variables) if template.payload else None
 
-        attempt = 0
-        while attempt < template.max_retries:
-            async with self.semaphore:
-                try:
-                    wrapper = await self._get_session(port)
-                    response = await wrapper.request(
-                        method=template.method.upper(),
-                        url=url,
-                        params=params,
-                        headers=headers or {},
-                        json=payload if isinstance(payload, (dict, list)) else None,
-                        data=payload if not isinstance(payload, (dict, list)) else None,
-                        timeout=template.timeout
-                    )
+            jitter = random.uniform(1, 3) 
+            await asyncio.sleep(jitter)
 
-                    if response.status_code == 429:
-                        raise Exception("Rate limited")
-                    if response.status_code not in template.expected_status:
-                        raise RequestsError(f"Status {response.status_code}")
+            attempt = 0
+            while attempt < template.max_retries:
+                async with self.semaphore:
+                    try:
+                        wrapper = await self._get_session(port)
+                        response = await wrapper.request(
+                            method=template.method.upper(),
+                            url=url,
+                            params=params,
+                            headers=headers or {},
+                            json=payload if isinstance(payload, (dict, list)) else None,
+                            data=payload if not isinstance(payload, (dict, list)) else None,
+                            timeout=template.timeout
+                        )
 
-                    return {
-                        "status": template.status_map.get(str(response.status_code), "taken"),
-                        "http_code": response.status_code,
-                        "data": response.json() if template.response_format == "json" else response.text
-                    }
+                        if response.status_code == 429:
+                            raise Exception("Rate limited")
+                        if response.status_code in [403]:
+                            raise Exception("Forbidden")
+                        if response.status_code not in template.expected_status:
+                            raise RequestsError(f"Status {response.status_code}")
 
-                except Exception as e:
-                    attempt += 1
-                    async with self._get_lock(control_port):
-                        await asyncio.to_thread(spoof.NewNym, control_port)
-                    
-                    wrapper = await self._get_session(port)
-                    await wrapper.reset()
-                    
-                    await asyncio.sleep(template.retry_delay + random.uniform(0.5, 1.5))
-        
-        raise RuntimeError(f"Échec {pseudo} sur {port}")
+                        return {
+                            "status": template.status_map.get(str(response.status_code), "taken"),
+                            "http_code": response.status_code,
+                            "data": response.json() if template.response_format == "json" else response.text
+                        }
 
-_ENGINE = RequestEngine(total_concurrency=150)
+                    except Exception as e:
+                        attempt += 1
+                        
+                        if attempt >= template.max_retries:
+                            return {"status": "failed", "error": str(e)}
+                            
+                        error_msg = str(e)
+                        if "Rate limited" in error_msg or "Forbidden" in error_msg:
+                            async with self._get_lock(control_port):
+                                await spoof.NewNymAsync(spoof.global_registry, control_port)
+                        
+                        wrapper = await self._get_session(port)
+                        await wrapper.reset()
+                        await asyncio.sleep(random.uniform(1, 2))        
+
+_ENGINE = RequestEngine(total_concurrency=250)
 
 async def run_template(template, pseudo, port, control_port, variables=None) -> Dict[str, Any]:
     variables = variables or {}
