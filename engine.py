@@ -10,6 +10,7 @@ from curl_cffi.requests import AsyncSession, RequestsError
 import re
 import base64
 
+from config import config
 import spoof
 
 BROWSER_FINGERPRINTS = ["chrome124", "safari17_0"]
@@ -112,10 +113,11 @@ class SessionWrapper:
             timeout=20 
         )
         self.request_count = 0
-        self.max_requests_per_session = 100
+        self.max_requests_per_session = config.max_requests_per_session
 
     async def request(self, **kwargs):
         self.request_count += 1
+        config.requests_per_session = self.request_count
         
         if self.request_count > self.max_requests_per_session:
             await self.reset()
@@ -133,6 +135,7 @@ class SessionWrapper:
         try: await self.session.close()
         except: pass
         self.browser = random.choice(BROWSER_FINGERPRINTS)
+        config.requests_per_session = 0
         self.headers = get_dynamic_headers(self.browser)
         self.session = AsyncSession(
             impersonate=self.browser, 
@@ -143,10 +146,10 @@ class SessionWrapper:
         self.request_count = 0
 
 class RequestEngine:
-    def __init__(self, total_concurrency: int = 200):
+    def __init__(self, total_concurrency: int = config.total_concurrency):
         self.semaphore = asyncio.Semaphore(total_concurrency)
         self.sessions: Dict[int, SessionWrapper] = {}
-        self.locks: Dict[int, asyncio.Lock] = {}
+        self.locks: Dict[int, asyncio.Lock] = {} 
 
     def _get_lock(self, control_port: int) -> asyncio.Lock:
         if control_port not in self.locks:
@@ -159,58 +162,68 @@ class RequestEngine:
         return self.sessions[port]
 
     async def execute(self, template, pseudo, port, control_port, variables):
-        url = _inject_variables(template.url, variables)
-        params = _inject_variables(template.params, variables) if template.params else None
-        headers = _inject_variables(template.headers, variables) if template.headers else None
-        payload = _inject_variables(template.payload, variables) if template.payload else None
+            url = _inject_variables(template.url, variables)
+            params = _inject_variables(template.params, variables) if template.params else None
+            headers = _inject_variables(template.headers, variables) if template.headers else None
+            payload = _inject_variables(template.payload, variables) if template.payload else None
 
-        jitter = random.uniform(1, 3) 
-        await asyncio.sleep(jitter)
+            jitter = random.uniform(config.sleep_min, config.sleep_max) 
+            await asyncio.sleep(jitter)
 
-        attempt = 0
-        while attempt < template.max_retries:
-            async with self.semaphore:
-                try:
-                    wrapper = await self._get_session(port)
-                    response = await wrapper.request(
-                        method=template.method.upper(),
-                        url=url,
-                        params=params,
-                        headers=headers or {},
-                        json=payload if isinstance(payload, (dict, list)) else None,
-                        data=payload if not isinstance(payload, (dict, list)) else None,
-                        timeout=template.timeout
-                    )
+            attempt = 0
+            while attempt < template.max_retries:
+                async with self.semaphore:
+                    # --- AJOUT : Incrémentation du total des requêtes ---
+                    config.total_requests = getattr(config, "total_requests", 0) + 1
 
-                    if response.status_code == 429:
-                        raise Exception("Rate limited")
-                    if response.status_code in [403]:
-                        raise Exception("Forbidden")
-                    if response.status_code not in template.expected_status:
-                        raise RequestsError(f"Status {response.status_code}")
+                    try:
+                        wrapper = await self._get_session(port)
+                        response = await wrapper.request(
+                            method=template.method.upper(),
+                            url=url,
+                            params=params,
+                            headers=headers or {},
+                            json=payload if isinstance(payload, (dict, list)) else None,
+                            data=payload if not isinstance(payload, (dict, list)) else None,
+                            timeout=template.timeout
+                        )
 
-                    return {
-                        "status": template.status_map.get(str(response.status_code), "taken"),
-                        "http_code": response.status_code,
-                        "data": response.json() if template.response_format == "json" else response.text
-                    }
+                        if response.status_code in [403, 429]:
+                            config.blocked_requests += 1
+                            async with self._get_lock(control_port):
+                                await spoof.NewNymAsync(spoof.global_registry, control_port)
+                            
+                            await wrapper.reset() 
+                            attempt += 1
+                            await asyncio.sleep(random.uniform(config.sleep_min, config.sleep_max))
+                            continue
 
-                except Exception as e:
-                    attempt += 1
-                    
-                    if attempt >= template.max_retries:
-                        return {"status": "failed", "error": str(e)}
+                        if response.status_code not in template.expected_status:
+                            raise RequestsError(f"Status {response.status_code}")
+
+                        return {
+                            "status": template.status_map.get(str(response.status_code), "taken"),
+                            "http_code": response.status_code,
+                            "data": response.json() if template.response_format == "json" else response.text
+                        }
+
+                    except Exception as e:
+                        attempt += 1
                         
-                    error_msg = str(e)
-                    if "Rate limited" in error_msg or "Forbidden" in error_msg:
+                        if attempt >= template.max_retries:
+                            config.blocked_requests += 1
+                            return {"status": "failed", "error": str(e)}
+                        
                         async with self._get_lock(control_port):
                             await spoof.NewNymAsync(spoof.global_registry, control_port)
-                    
-                    wrapper = await self._get_session(port)
-                    await wrapper.reset()
-                    await asyncio.sleep(random.uniform(1, 2))        
+                            
+                        wrapper = await self._get_session(port)
+                        await wrapper.reset()
+                        await asyncio.sleep(random.uniform(config.sleep_min, config.sleep_max))        
 
-_ENGINE = RequestEngine(total_concurrency=250)
+            return {"status": "failed", "error": "Max retries exceeded"}
+
+_ENGINE = RequestEngine(total_concurrency=config.total_concurrency)
 
 async def run_template(template, pseudo, port, control_port, variables=None) -> Dict[str, Any]:
     variables = variables or {}

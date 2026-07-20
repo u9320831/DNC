@@ -5,14 +5,14 @@ from pathlib import Path
 import customtkinter as ctk
 import asyncio
 import string
-import sys
-import os
 import spoof
 import handler
 import macro
-import engine
+from cache import global_cache
 from discord_webhook import DiscordWebhook
 import tor_locker
+from config import config
+from optimizer import SmartOptimizer
 
 # --- Initialisation UI ---
 main_windows = ctk.CTk()
@@ -199,6 +199,7 @@ async def run_scanner_process():
             f.write(orjson.dumps(config_data, option=orjson.OPT_INDENT_2))
     except Exception as e:
         log_to_gui(f"[-] Erreur sauvegarde config : {e}", "#e74c3c")
+        return
 
     templates = handler.load_templates_from_folder("templates")
     discord_tpl = templates.get("discord")
@@ -235,30 +236,53 @@ async def run_scanner_process():
             
             if result.get("status") == "available":
                 display_free_pseudo(pseudo, instance.socks_port)
+                global_cache.set(pseudo, "available")
             else:
                 display_taken_pseudo(pseudo, instance.socks_port)
+                global_cache.set(pseudo, "taken")
                 
         except Exception as e:
-            print(f"[!] Échec temporaire pour {pseudo} ({e}) -> Remis en fin de file.")
+            print(f"[System] Reprise de la tâche pour {pseudo} après une erreur temporaire : {e}")
             pool.add_task({"pseudo": pseudo})
     
     pool = spoof.TorPool(instances_data, task_handler)
     
     generator = handler.Generate(length, charset)
-    for pseudo in generator:
-        pool.add_task({"pseudo": pseudo})
     
-    scan_task = asyncio.create_task(pool.run(workers_per_instance=25))
+    skipped_count = 0
+    added_count = 0
+    
+    for pseudo in generator:
+        if global_cache.get(pseudo) == "taken":
+            skipped_count += 1
+            continue
+            
+        pool.add_task({"pseudo": pseudo})
+        added_count += 1
+
+    log_to_gui(f"[Cache] Pseudos déjà traités et ignorés : {skipped_count}", "#3498db")
+    log_to_gui(f"[Cache] Nouveaux pseudos à analyser : {added_count}", "#2ecc71")
+
+    # --- Intégration propre de ton SmartOptimizer externe ---
+    optimizer = SmartOptimizer(telemetry_instance=tor_locker)
+    log_to_gui("[Optimizer] Boucle d’optimisation active et prête.", "#2ecc71")
+
+    scan_task = asyncio.create_task(pool.run(workers_per_instance=config.workers_per_instance))
     controller_task = asyncio.create_task(asyncio.to_thread(tor_locker._controllers))
     
-    await asyncio.gather(scan_task, controller_task)
+    # On lance la boucle de l'optimiseur que tu as définie dans optimizer.py
+    optimizer_task = asyncio.create_task(optimizer.start_monitoring_loop(interval=3.0))
+    
+    await asyncio.gather(scan_task, controller_task, optimizer_task)
+
+    global_cache.save()
 
 def display_free_pseudo(pseudo, port):
     if "pris" in pseudo.lower() or "taken" in pseudo.lower():
         log_to_gui(f"[-] Taken   : {pseudo} (Port: {port})", "#e74c3c")
         return
 
-    log_to_gui(f"[+] Success : {pseudo} est LIBRE ! (Port: {port})", "#2ecc71")
+    log_to_gui(f"[Success] {pseudo} est disponible. Port Tor : {port}", "#2ecc71")
 
     def send_discord():
         webhook_url = WebhookEntry.get().strip()

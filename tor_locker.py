@@ -9,15 +9,13 @@ from pathlib import Path
 import shutil
 import time
 import os
+from config import config
 
 import macro
 import telemetry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
-
-SAFE_MEMORY_LOCK = 85.0
-SAFE_CPU_LOCK = 85.0
 
 @dataclass
 class Manager:
@@ -60,15 +58,13 @@ class Manager:
             next_socks = 9050
             next_control = 9051
 
-        # 1. Génération physique du fichier torcc via ton module macro
         result = macro.MacroTorcc(str(next_socks), str(next_control), str(next_idx))
 
         if result != 1:
             logging.info(f"[-] Échec de génération du torcc pour le Provider #{next_idx}")
             return
 
-        # 2. Lancement effectif du processus Tor en arrière-plan
-        tor_exe = "Tor\\tor.exe"  # Ou le chemin absolu vers ton tor.exe si nécessaire
+        tor_exe = "Tor\\tor.exe" 
         torcc_path = f"Tor\\torcc{next_idx}"
 
         try:
@@ -82,7 +78,6 @@ class Manager:
             logging.info(f"[-] Erreur lors du lancement physique de Tor pour le Provider #{next_idx} : {e}")
             return
 
-        # 3. Sauvegarde dans le JSON, PID inclus, dès que le process est lancé
         self.data["provider"][str(next_idx)] = {
             "socks_port": next_socks,
             "control_port": next_control,
@@ -109,12 +104,11 @@ class Manager:
         provider_settings = providers.get(str_last_idx, {})
         pid = provider_settings.get("pid")
 
-        # 1. Kill du process via le PID stocké (fiable, pas de recherche par port)
         if pid:
             try:
                 proc = psutil.Process(pid)
                 proc.kill()
-                proc.wait(timeout=10)  # laisse le temps à Tor de flush/fermer ses fichiers
+                proc.wait(timeout=10)  
             except psutil.NoSuchProcess:
                 logging.info(f"[~] PID {pid} déjà terminé.")
             except psutil.TimeoutExpired:
@@ -125,14 +119,12 @@ class Manager:
                 except Exception as e:
                     logging.error(f"[-] Impossible de tuer le PID {pid} : {e}")
 
-            # 2. Vérification explicite avant de toucher aux fichiers
             if psutil.pid_exists(pid):
                 logging.error(f"[-] Le process {pid} est toujours vivant, abandon de la suppression des fichiers.")
                 return
         else:
             logging.info("[~] Aucun PID enregistré pour ce provider, suppression directe des fichiers.")
 
-        # 3. Petite pause pour laisser Windows relâcher les handles de fichiers
         time.sleep(0.5)
 
         tor_dir = Path("Tor")
@@ -150,14 +142,18 @@ class Manager:
                     time.sleep(0.3)
 
         if data_dir.exists() and data_dir.is_dir():
-            for attempt in range(5):
+            for attempt in range(10):
                 try:
-                    shutil.rmtree(data_dir)
+
+                    if os.path.exists(data_dir):
+                        shutil.rmtree(data_dir)
                     break
                 except PermissionError:
-                    if attempt == 4:
-                        raise
-                    time.sleep(0.3)
+                    if attempt < 9:
+                        time.sleep(0.5)  
+                    else:
+                        print(f"[!] Avertissement : Impossible de nettoyer le dossier {data_dir} (verrouillé).")
+                    break
 
         del self.data["provider"][str_last_idx]
 
@@ -173,20 +169,18 @@ class Manager:
 class TorAnomalyManager:
     def __init__(self, contamination: float = 0.05, warmup_s: int = 300):
         self.model = IsolationForest(contamination=contamination, random_state=42)
-        self.warmup_s = warmup_s  # 5 minutes par défaut, avant d'être éligible à l'analyse
+        self.warmup_s = warmup_s 
 
     def analyze_and_mitigate(self, tor_data: dict):
         if not tor_data:
             return []
 
-        # On sépare les instances "matures" (analysables) des instances en warm-up
         mature_pids = [
             pid for pid, info in tor_data.items()
             if info["uptime_s"] >= self.warmup_s
         ]
 
         if len(mature_pids) < 5:
-            # Pas assez d'instances matures pour entraîner/prédire correctement
             return []
 
         features = []
@@ -222,7 +216,7 @@ class TorAnomalyManager:
         mem = psutil.virtual_memory()
         cpu = psutil.cpu_percent(interval=None)
 
-        if mem.percent < SAFE_MEMORY_LOCK and cpu < SAFE_CPU_LOCK:
+        if mem.percent < config.SAFE_MEMORY_LOCK and cpu < config.SAFE_CPU_LOCK:
             return True
         return False
 

@@ -1,77 +1,111 @@
-# 🌕 DNC - Discord Name Checker
+# � DNC - Discord Name Checker
 
-DNC est un outil d'automatisation et de vérification multi-threadé qui vous permet de scanner la disponibilité des pseudonymes Discord.
-Note : Si l'application tourne en arrière-plan, c'est simplement le client Tor. Si l'application est fermée, vous pouvez arrêter le processus sans craindre
----
+DNC est un outil d'automatisation et de vérification multi-threadé conçu pour scanner la disponibilité des pseudonymes Discord avec un niveau élevé de discrétion et de stabilité.
 
-## 🚀 Fonctionnalités
-
-*   **Multi-threading & Rotation IP :** Utilisation simultanée de plusieurs instances de Tor configurables.
-*   **Contournement des Rate Limits :** Changement automatique d'identité Tor (NewNym) et spoofing après chaque vérification.
-*   **Interface Graphique (GUI) Moderne :** Développée avec `CustomTkinter` pour un rendu élégant et intuitif.
-*   **Sauvegarde automatique :** Conservation de vos réglages (longueur de pseudo, webhook Discord) dans un fichier `config.json`.
-*   **Notifications Discord :** Alertes en temps réel par Webhook dès qu'un pseudo est disponible.
+> Si l'application tourne en arrière-plan, il s'agit généralement du processus Tor. Vous pouvez la fermer sans risque si vous ne souhaitez plus l'utiliser.
 
 ---
 
-## 📦 Installation & Utilisation (Développeurs)
+## ✨ Ce que fait DNC
 
-Si vous souhaitez exécuter le projet directement à partir des sources Python (`DNC.py`), suivez les étapes suivantes.
+DNC combine plusieurs mécanismes pour améliorer la fiabilité du scan :
+
+- 🔁 Multi-threading et parallélisme
+- 🌐 Rotation d'identité Tor via NewNym
+- 🧠 Optimisation dynamique des paramètres de requêtes
+- 🛡️ Gestion de blocages et de rate limits
+- 🖥️ Interface graphique moderne avec CustomTkinter
+- 🔔 Notifications Discord via webhook
+- 💾 Sauvegarde automatique des préférences et des résultats
+
+---
+
+## 🚀 Fonctionnalités principales
+
+- **Scan rapide de pseudos Discord** avec plusieurs instances Tor configurables
+- **Contournement des rate limits** grâce à la rotation de circuits et au spoofing
+- **Optimisation en temps réel** des paramètres de requête selon les métriques observées
+- **Interface élégante et intuitive** pour un usage simple
+- **Persistance des réglages** dans un fichier de configuration JSON
+
+---
+
+## 📦 Installation
 
 ### Prérequis
-*   [Python 3.10+](https://www.python.org/downloads/)
-*   Le dossier `Tor` contenant les binaires de Tor configurés à la racine du projet.
+
+- Python 3.10+
+- Un dossier Tor prêt à l'emploi à la racine du projet
 
 ### 1. Cloner le dépôt
+
 ```bash
 git clone https://github.com/u9320831/DNC.git
 cd DNC
-
 ```
 
 ### 2. Installer les dépendances
 
-Utilisez le fichier `requirements.txt` pour installer toutes les bibliothèques requises d'un seul coup :
-
 ```bash
 pip install -r requirements.txt
-
 ```
 
 ### 3. Lancer l'application
 
 ```bash
 python DNC.py
-
 ```
 
 ---
 
-## 🛠️ Utilisation de la version compilée (`DNC.exe`)
+## 🛠️ Version compilée
 
-Si vous préférez utiliser l'application directement sans installer Python, vous pouvez exécuter le fichier pré-compilé.
+Si vous préférez utiliser l'application sans installer Python :
 
-1. Rendez-vous dans l'onglet **Releases** de ce GitHub (ou téléchargez directement le fichier `DNC.exe`).
-2. Placez le fichier `DNC.exe` dans le dossier de votre choix.
-3. Lancez `DNC.exe`.
-> *Note : Un fichier `config.json` sera automatiquement généré à côté de l'exécutable lors du premier lancement pour stocker vos préférences.*
+1. Ouvrez la section **Releases** du dépôt GitHub
+2. Téléchargez le fichier `DNC.exe`
+3. Placez-le dans le dossier de votre choix
+4. Lancez-le
+
+> Une configuration initiale sera créée automatiquement dans le même dossier si nécessaire.
 
 ---
 
-## 📝 Configuration JSON (`config.json`)
+## ⚙️ Configuration
 
-Le fichier de configuration est automatiquement généré à la racine. Voici sa structure par défaut :
+Le fichier `config.json` est généré automatiquement à la racine du projet. Exemple de structure :
 
 ```json
 {
-    "user_mode": {
-        "lenght": 4,
-        "webhook_url": ""
-    },
-    "provider": {}
+  "user_mode": {
+    "lenght": 4,
+    "webhook_url": ""
+  },
+  "provider": {}
 }
-
 ```
+
 ---
 
-*Développé avec 💙 par **𝗖𝗶𝗿𝗼🌕***
+## 📁 Structure du projet
+
+- `DNC.py` : point d'entrée principal
+- `handler.py` / `engine.py` : logique des requêtes
+- `spoof.py` : gestion Tor et rotation d'identité
+- `optimizer.py` / `optimizer_memory.py` : optimisation adaptative
+- `templates/` : modèles de requêtes
+- `Tor/` : binaires et données Tor
+
+---
+
+## 🧠 Notes importantes
+
+- Cet outil est destiné à un usage personnel et responsable.
+- Le comportement peut varier selon la stabilité des instances Tor et des services ciblés.
+- Une bonne configuration réseau et Tor est essentielle pour des résultats optimaux.
+
+---
+
+## ❤️ Crédits
+
+Développé avec passion par **Ciro**.

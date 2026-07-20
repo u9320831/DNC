@@ -2,12 +2,10 @@ from pathlib import Path
 import orjson
 
 def MacroTorcc(TorPort: str, TorControlPort: str, idx: str) -> int:
-    # Utilisation de chemins d'accès propres et compatibles Windows/Linux
     tor_dir = Path("Tor")
     data_dir = tor_dir / f"data{idx}"
     torcc_path = tor_dir / f"torcc{idx}"
 
-    # Correction du template (CookieAuthentication à 0 pour faciliter la vie de stem)
     templates = f"""SocksPort {TorPort}
 ControlPort {TorControlPort}
 GeoIPFile Tor/geoip

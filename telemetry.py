@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from typing import Dict, Any, List
 from datetime import datetime, timezone
 from pathlib import Path
+import os
+import threading
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -16,6 +18,32 @@ class Telemetry:
     TorData: Dict[int, Any] = field(default_factory=dict)
     history: List[Dict[str, Any]] = field(default_factory=list)
     process_name: str = "tor"
+    filepath: str = "logs/telemetry.jsonl"
+
+    def __post_init__(self):
+        self.lock = threading.Lock()
+        log_dir = os.path.dirname(self.filepath)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
+
+    def log_event(self, data: dict):
+        """Écrit une ligne de télémétrie au format JSONL de manière sécurisée et immédiate avec orjson."""
+        if "timestamp" not in data:
+            data["timestamp"] = datetime.now(timezone.utc)
+            
+        # orjson.dumps retourne des bytes, on ajoute un saut de ligne en bytes (b"\n")
+        payload = orjson.dumps(data, option=orjson.OPT_NAIVE_UTC) + b"\n"
+        
+        # Utilisation d'un verrou pour le multi-threading
+        with self.lock:
+            # Ouverture en mode binaire append ('ab') car orjson manipule des bytes
+            try:
+                with open(self.filepath, "ab") as f:
+                    f.write(payload)
+                    f.flush()  # Force l'écriture physique sur le disque
+                    os.fsync(f.fileno())  # Sécurité supplémentaire pour l'I/O
+            except Exception as e:
+                print(f"[Erreur Télémétrie] Impossible d'écrire le log : {e}")
 
     def snapshot(self) -> Dict[str, Any]:
         total_rss = 0
@@ -24,7 +52,7 @@ class Telemetry:
         self.TorData.clear()
 
         for proc in psutil.process_iter(['pid', 'name', 'memory_info', 'cpu_percent',
-                                          'create_time', 'num_threads']):
+                                         'create_time', 'num_threads']):
             try:
                 name = proc.info['name'] or ""
                 if self.process_name.lower() in name.lower():
@@ -58,14 +86,14 @@ class Telemetry:
 
     def save_csv(self, path: str = "tor_dataset.csv"):
         file_exists = Path(path).exists()
-        with open(path, "a", newline="") as f:
+        with open(path, "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             if not file_exists:
                 writer.writerow(["timestamp", "n_instances", "total_rss_mb",
-                                  "total_vms_mb", "total_cpu_percent"])
+                                 "total_vms_mb", "total_cpu_percent"])
             for r in self.history:
                 writer.writerow([r["timestamp"].isoformat(), r["n_instances"],
-                                  r["total_rss_mb"], r["total_vms_mb"], r["total_cpu_percent"]])
+                                 r["total_rss_mb"], r["total_vms_mb"], r["total_cpu_percent"]])
 
     def save_json(self, path: str = "tor_dataset.jsonl"):
         with open(path, "ab") as f:  
@@ -84,7 +112,3 @@ def collect_loop(interval_s: int = 30, duration_s: int = 3600):
                      f"| RSS={record['total_rss_mb']}MB | CPU={record['total_cpu_percent']}%")
         telemetry.save_json()
         time.sleep(interval_s)
-
-
-# if __name__ == "__main__":
-#     collect_loop(interval_s=10, duration_s=3600)

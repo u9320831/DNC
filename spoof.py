@@ -13,6 +13,7 @@ import os
 import shutil
 
 from macro import MacroTorcc 
+from config import config  # Importation de votre configuration dynamique partagée
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("spoof")
@@ -51,7 +52,6 @@ class ProxyRegistry:
 global_registry = ProxyRegistry()
 
 def Spoof(torcc_path: str, port: int) -> int:
-    """Lance Tor avec des flags système pour cacher la fenêtre sur Windows."""
     cmd = ["tor", "-f", torcc_path]
     popen_args = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 
@@ -79,8 +79,8 @@ class TorInstance:
         return f"socks5h://127.0.0.1:{self.socks_port}"
 
     def get_newnym_wait(self) -> float:
-        """Retourne un délai dynamique pour laisser le circuit Tor se stabiliser."""
-        return random.uniform(1, 2.0)
+        # Modification dynamique : utilise les curseurs en live de l'agent
+        return random.uniform(config.sleep_min, config.sleep_max)
 
 class TorController:
     def __init__(self, instance: TorInstance):
@@ -125,16 +125,20 @@ class TorPool:
                     except Exception as e:
                         logger.error(f"Erreur task {task.get('pseudo')}: {e}")
                         await TorController(instance).new_identity()
-                        await asyncio.sleep(1.0)
+                        # Utilise config.retry_delay en live
+                        await asyncio.sleep(config.retry_delay)
                         self.queue.put_nowait(task)
                 
                 self.queue.task_done()
 
     async def run(self, workers_per_instance: int = 1):
         tasks = []
+        # Utilisation dynamique de config.workers_per_instance si l'argument par défaut est passé
+        current_workers = config.workers_per_instance if workers_per_instance == 1 else workers_per_instance
+        
         for inst in self.instances:
             sem = asyncio.Semaphore(inst.max_concurrency)
-            for _ in range(workers_per_instance):
+            for _ in range(current_workers):
                 tasks.append(asyncio.create_task(self._worker(sem, inst)))
         
         await self.queue.join()
@@ -149,13 +153,13 @@ class TorManager:
         self.max_instances = max_instances
 
     def start_initial_pool(self):
-        print(f"[*] Démarrage du pool initial : {self.initial_count} instances...")
+        print(f"[System] Initialisation du pool Tor avec {self.initial_count} instances.")
         for _ in range(self.initial_count):
             self.add_instance()
 
     def add_instance(self):
         if len(self.active_processes) >= self.max_instances:
-            print("[!] Limite maximale d'instances atteinte.")
+            print("[System] Limite maximale d’instances atteinte.")
             return None
 
         self.current_id_counter += 1
@@ -171,16 +175,16 @@ class TorManager:
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             )
             self.active_processes[instance_id] = process
-            print(f"[+] Instance {instance_id} démarrée avec succès (PID: {process.pid})")
+            print(f"[System] Instance Tor {instance_id} démarrée avec succès (PID: {process.pid}).")
             return instance_id
         except Exception as e:
-            print(f"[-] Échec du lancement de l'instance {instance_id}: {e}")
+            print(f"[System] Échec du démarrage de l’instance Tor {instance_id}: {e}")
             return None
 
     def remove_instance(self, instance_id):
         if instance_id in self.active_processes:
             process = self.active_processes[instance_id]
-            print(f"[*] Arrêt de l'instance {instance_id}...")
+            print(f"[System] Arrêt de l’instance Tor {instance_id} en cours...")
             process.terminate()
             process.wait() 
             
@@ -191,12 +195,22 @@ class TorManager:
                     os.remove(f"torcc{instance_id}")
                 
                 data_dir = f"Tor/data{instance_id}"
-                if os.path.exists(data_dir):
-                    shutil.rmtree(data_dir)
-                    
-                print(f"[+] Fichiers de l'instance {instance_id} nettoyés.")
+                
+                # --- CORRECTION WINDOWS : Boucle de réessai robuste pour le verrouillage du dossier ---
+                for attempt in range(10):
+                    try:
+                        if os.path.exists(data_dir):
+                            shutil.rmtree(data_dir)
+                        break
+                    except PermissionError:
+                        if attempt < 9:
+                            time.sleep(1.0) # Laisse 1 seconde à Windows pour relâcher le .lock
+                        else:
+                            print(f"[System] Nettoyage du dossier {data_dir} impossible : ressource verrouillée.")
+                            
+                print(f"[System] Fichiers de l’instance Tor {instance_id} nettoyés.")
             except Exception as e:
-                print(f"[-] Erreur de nettoyage {instance_id}: {e}")
+                print(f"[System] Échec du nettoyage de l’instance Tor {instance_id}: {e}")
 
 def get_current_ip(control_port: int) -> str | None:
     try:
@@ -263,15 +277,11 @@ def get_current_ip(control_port: int) -> str | None:
 
 port_locks = defaultdict(asyncio.Lock)
 
-async def NewNymAsync(registry, control_port: int, wait: float = 0.5, max_retries: int = 5):
-    """
-    Tente d'obtenir une IP propre via rotation avec verrouillage de port 
-    et gestion des retries pendant le démarrage de Tor.
-    """
+async def NewNymAsync(registry, control_port: int, wait: float = 0.5, max_retries: int = 10):
     async with port_locks[control_port]:
         
         async def send_signal():
-            # On laisse plusieurs essais si le port n'est pas encore ouvert (démarrage de Tor)
+            # Augmentation du nombre d'essais pour laisser le temps au nouveau Tor de s'initialiser à chaud
             for attempt in range(max_retries):
                 try:
                     reader, writer = await asyncio.open_connection("127.0.0.1", control_port)
@@ -282,19 +292,18 @@ async def NewNymAsync(registry, control_port: int, wait: float = 0.5, max_retrie
                     await writer.wait_closed()
                     return True
                 except (ConnectionRefusedError, OSError):
-                    # Tor est en train de démarrer, on patiente brièvement avant de réessayer
                     if attempt < max_retries - 1:
-                        await asyncio.sleep(1.0)
+                        await asyncio.sleep(0.8) # Laisse le temps au port de s'ouvrir sans abandonner trop vite
                     else:
                         return False
                 except Exception as e:
-                    logger.warning(f"[-] Erreur inattendue sur le control port {control_port}: {e}")
+                    logger.debug(f"[-] Erreur inattendue sur le control port {control_port}: {e}")
                     return False
             return False
 
         success = await send_signal()
         if not success:
-            logger.warning(f"[-] Control port {control_port} injoignable, instance ignorée désormais.")
+            logger.debug(f"[-] Control port {control_port} injoignable, instance ignorée temporairement.")
             return None
             
         await asyncio.sleep(wait) 

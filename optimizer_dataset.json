@@ -1,0 +1,930 @@
+[
+  {
+    "concurrency": 265,
+    "sleep_min": 0.95,
+    "sleep_max": 1.95,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 280,
+    "sleep_min": 0.8999999999999999,
+    "sleep_max": 1.9,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 295,
+    "sleep_min": 0.8499999999999999,
+    "sleep_max": 1.8499999999999999,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 310,
+    "sleep_min": 0.7999999999999998,
+    "sleep_max": 1.7999999999999998,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 315,
+    "sleep_min": 0.7499999999999998,
+    "sleep_max": 1.7499999999999998,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 320,
+    "sleep_min": 0.6999999999999997,
+    "sleep_max": 1.6999999999999997,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 325,
+    "sleep_min": 0.6499999999999997,
+    "sleep_max": 1.6499999999999997,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 280,
+    "sleep_min": 0.8999999999999999,
+    "sleep_max": 1.9,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 238,
+    "sleep_min": 1.0999999999999999,
+    "sleep_max": 2.3,
+    "success_score": 69.4980694980695,
+    "block_rate": 0.305019305019305,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 202,
+    "sleep_min": 1.2999999999999998,
+    "sleep_max": 2.6999999999999997,
+    "success_score": 29.411764705882348,
+    "block_rate": 0.7058823529411765,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 171,
+    "sleep_min": 1.4999999999999998,
+    "sleep_max": 3.0999999999999996,
+    "success_score": 90.21739130434783,
+    "block_rate": 0.09782608695652174,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 145,
+    "sleep_min": 1.6999999999999997,
+    "sleep_max": 3.4999999999999996,
+    "success_score": 84.70588235294117,
+    "block_rate": 0.15294117647058825,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 123,
+    "sleep_min": 1.8999999999999997,
+    "sleep_max": 3.8999999999999995,
+    "success_score": 77.14285714285714,
+    "block_rate": 0.22857142857142856,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 104,
+    "sleep_min": 2.0999999999999996,
+    "sleep_max": 4.3,
+    "success_score": 66.66666666666667,
+    "block_rate": 0.3333333333333333,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 88,
+    "sleep_min": 2.3,
+    "sleep_max": 4.7,
+    "success_score": 82.27848101265823,
+    "block_rate": 0.17721518987341772,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 74,
+    "sleep_min": 2.5,
+    "sleep_max": 5.1000000000000005,
+    "success_score": 77.17391304347827,
+    "block_rate": 0.22826086956521738,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 62,
+    "sleep_min": 2.7,
+    "sleep_max": 5.500000000000001,
+    "success_score": 75.0,
+    "block_rate": 0.25,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 52,
+    "sleep_min": 2.9000000000000004,
+    "sleep_max": 5.900000000000001,
+    "success_score": 47.61904761904761,
+    "block_rate": 0.5238095238095238,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 44,
+    "sleep_min": 3.1000000000000005,
+    "sleep_max": 6.300000000000002,
+    "success_score": 48.4375,
+    "block_rate": 0.515625,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 37,
+    "sleep_min": 3.3000000000000007,
+    "sleep_max": 6.700000000000002,
+    "success_score": 67.3076923076923,
+    "block_rate": 0.3269230769230769,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 31,
+    "sleep_min": 3.500000000000001,
+    "sleep_max": 7.100000000000002,
+    "success_score": 56.896551724137936,
+    "block_rate": 0.43103448275862066,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 26,
+    "sleep_min": 3.700000000000001,
+    "sleep_max": 7.500000000000003,
+    "success_score": 53.48837209302326,
+    "block_rate": 0.46511627906976744,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 22,
+    "sleep_min": 3.9000000000000012,
+    "sleep_max": 7.900000000000003,
+    "success_score": 50.51546391752577,
+    "block_rate": 0.4948453608247423,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 250,
+    "sleep_min": 1.0,
+    "sleep_max": 2.0,
+    "success_score": 95.0,
+    "block_rate": 0.1,
+    "requests_per_session": 7
+  },
+  {
+    "concurrency": 280,
+    "sleep_min": 0.8999999999999999,
+    "sleep_max": 1.9,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 238,
+    "sleep_min": 1.0999999999999999,
+    "sleep_max": 2.3,
+    "success_score": 70.0374531835206,
+    "block_rate": 0.299625468164794,
+    "requests_per_session": 0
+  },
+  {
+    "concurrency": 202,
+    "sleep_min": 1.2999999999999998,
+    "sleep_max": 2.6999999999999997,
+    "success_score": 68.6046511627907,
+    "block_rate": 0.313953488372093,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 171,
+    "sleep_min": 1.4999999999999998,
+    "sleep_max": 3.0999999999999996,
+    "success_score": 84.33734939759036,
+    "block_rate": 0.1566265060240964,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 171,
+    "sleep_min": 1.4999999999999998,
+    "sleep_max": 3.0999999999999996,
+    "success_score": 98.80952380952381,
+    "block_rate": 0.011904761904761904,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 145,
+    "sleep_min": 1.6999999999999997,
+    "sleep_max": 3.4999999999999996,
+    "success_score": 80.95238095238095,
+    "block_rate": 0.19047619047619047,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 123,
+    "sleep_min": 1.8999999999999997,
+    "sleep_max": 3.8999999999999995,
+    "success_score": 78.57142857142857,
+    "block_rate": 0.21428571428571427,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 104,
+    "sleep_min": 2.0999999999999996,
+    "sleep_max": 4.3,
+    "success_score": 73.62637362637362,
+    "block_rate": 0.26373626373626374,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 88,
+    "sleep_min": 2.3,
+    "sleep_max": 4.7,
+    "success_score": 75.72815533980582,
+    "block_rate": 0.24271844660194175,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 74,
+    "sleep_min": 2.5,
+    "sleep_max": 5.1000000000000005,
+    "success_score": 63.04347826086957,
+    "block_rate": 0.3695652173913043,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 62,
+    "sleep_min": 2.7,
+    "sleep_max": 5.500000000000001,
+    "success_score": 58.88888888888889,
+    "block_rate": 0.4111111111111111,
+    "requests_per_session": 3
+  },
+  {
+    "concurrency": 52,
+    "sleep_min": 2.9000000000000004,
+    "sleep_max": 5.900000000000001,
+    "success_score": 48.7603305785124,
+    "block_rate": 0.512396694214876,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 44,
+    "sleep_min": 3.1000000000000005,
+    "sleep_max": 6.300000000000002,
+    "success_score": 70.12987012987013,
+    "block_rate": 0.2987012987012987,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 37,
+    "sleep_min": 3.3000000000000007,
+    "sleep_max": 6.700000000000002,
+    "success_score": 32.075471698113205,
+    "block_rate": 0.6792452830188679,
+    "requests_per_session": 9
+  },
+  {
+    "concurrency": 31,
+    "sleep_min": 3.500000000000001,
+    "sleep_max": 7.100000000000002,
+    "success_score": 59.523809523809526,
+    "block_rate": 0.40476190476190477,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 26,
+    "sleep_min": 3.700000000000001,
+    "sleep_max": 7.500000000000003,
+    "success_score": 61.76470588235294,
+    "block_rate": 0.38235294117647056,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 22,
+    "sleep_min": 3.9000000000000012,
+    "sleep_max": 7.900000000000003,
+    "success_score": 60.869565217391305,
+    "block_rate": 0.391304347826087,
+    "requests_per_session": 3
+  },
+  {
+    "concurrency": 18,
+    "sleep_min": 4.100000000000001,
+    "sleep_max": 8.300000000000002,
+    "success_score": 67.5,
+    "block_rate": 0.325,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 15,
+    "sleep_min": 4.300000000000002,
+    "sleep_max": 8.700000000000003,
+    "success_score": 64.93506493506493,
+    "block_rate": 0.35064935064935066,
+    "requests_per_session": 0
+  },
+  {
+    "concurrency": 12,
+    "sleep_min": 4.500000000000002,
+    "sleep_max": 9.100000000000003,
+    "success_score": 61.333333333333336,
+    "block_rate": 0.38666666666666666,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 10,
+    "sleep_min": 4.700000000000002,
+    "sleep_max": 9.500000000000004,
+    "success_score": 53.84615384615385,
+    "block_rate": 0.46153846153846156,
+    "requests_per_session": 0
+  },
+  {
+    "concurrency": 10,
+    "sleep_min": 4.900000000000002,
+    "sleep_max": 9.900000000000004,
+    "success_score": 49.382716049382715,
+    "block_rate": 0.5061728395061729,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 265,
+    "sleep_min": 0.982,
+    "sleep_max": 2.0730000000000004,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 212,
+    "sleep_min": 1.26,
+    "sleep_max": 2.627,
+    "success_score": 62.452107279693486,
+    "block_rate": 0.37547892720306514,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 174,
+    "sleep_min": 1.496,
+    "sleep_max": 3.098,
+    "success_score": 85.18518518518519,
+    "block_rate": 0.14814814814814814,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 143,
+    "sleep_min": 1.7269999999999999,
+    "sleep_max": 3.558,
+    "success_score": 76.34408602150538,
+    "block_rate": 0.23655913978494625,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 1.9529999999999998,
+    "sleep_max": 4.009,
+    "success_score": 88.50574712643679,
+    "block_rate": 0.11494252873563218,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.007,
+    "sleep_max": 4.119,
+    "success_score": 79.12087912087912,
+    "block_rate": 0.2087912087912088,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.053,
+    "sleep_max": 4.212,
+    "success_score": 85.3658536585366,
+    "block_rate": 0.14634146341463414,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.092,
+    "sleep_max": 4.291,
+    "success_score": 64.65517241379311,
+    "block_rate": 0.35344827586206895,
+    "requests_per_session": 3
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.125,
+    "sleep_max": 4.3580000000000005,
+    "success_score": 74.46808510638297,
+    "block_rate": 0.2553191489361702,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.154,
+    "sleep_max": 4.415,
+    "success_score": 60.869565217391305,
+    "block_rate": 0.391304347826087,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.178,
+    "sleep_max": 4.464,
+    "success_score": 56.48148148148148,
+    "block_rate": 0.4351851851851852,
+    "requests_per_session": 3
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.1990000000000003,
+    "sleep_max": 4.505000000000001,
+    "success_score": 68.53932584269663,
+    "block_rate": 0.3146067415730337,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.216,
+    "sleep_max": 4.54,
+    "success_score": 33.33333333333334,
+    "block_rate": 0.6666666666666666,
+    "requests_per_session": 5
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.2310000000000003,
+    "sleep_max": 4.57,
+    "success_score": 62.19512195121951,
+    "block_rate": 0.3780487804878049,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.244,
+    "sleep_max": 4.595000000000001,
+    "success_score": 59.5959595959596,
+    "block_rate": 0.40404040404040403,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.2550000000000003,
+    "sleep_max": 4.617,
+    "success_score": 59.57446808510639,
+    "block_rate": 0.40425531914893614,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.2640000000000002,
+    "sleep_max": 4.635000000000001,
+    "success_score": 60.204081632653065,
+    "block_rate": 0.3979591836734694,
+    "requests_per_session": 0
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.2720000000000002,
+    "sleep_max": 4.651000000000001,
+    "success_score": 68.42105263157895,
+    "block_rate": 0.3157894736842105,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.2790000000000004,
+    "sleep_max": 4.664000000000001,
+    "success_score": 60.215053763440864,
+    "block_rate": 0.3978494623655914,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.2840000000000003,
+    "sleep_max": 4.675000000000001,
+    "success_score": 49.46236559139785,
+    "block_rate": 0.5053763440860215,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 119,
+    "sleep_min": 2.289,
+    "sleep_max": 4.6850000000000005,
+    "success_score": 61.386138613861384,
+    "block_rate": 0.38613861386138615,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 100,
+    "sleep_min": 2.439,
+    "sleep_max": 4.984,
+    "success_score": 50.943396226415096,
+    "block_rate": 0.49056603773584906,
+    "requests_per_session": 0
+  },
+  {
+    "concurrency": 258,
+    "sleep_min": 1.05,
+    "sleep_max": 2.209,
+    "success_score": 100.0,
+    "block_rate": 0.0,
+    "requests_per_session": 100
+  },
+  {
+    "concurrency": 201,
+    "sleep_min": 1.385,
+    "sleep_max": 2.879,
+    "success_score": 63.13725490196078,
+    "block_rate": 0.3686274509803922,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 159,
+    "sleep_min": 1.67,
+    "sleep_max": 3.449,
+    "success_score": 74.24242424242425,
+    "block_rate": 0.25757575757575757,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 130,
+    "sleep_min": 1.927,
+    "sleep_max": 3.963,
+    "success_score": 80.3921568627451,
+    "block_rate": 0.19607843137254902,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 108,
+    "sleep_min": 2.146,
+    "sleep_max": 4.4,
+    "success_score": 80.76923076923077,
+    "block_rate": 0.19230769230769232,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 110,
+    "sleep_min": 2.182,
+    "sleep_max": 4.471,
+    "success_score": 84.15841584158416,
+    "block_rate": 0.15841584158415842,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 112,
+    "sleep_min": 2.212,
+    "sleep_max": 4.532,
+    "success_score": 82.55813953488372,
+    "block_rate": 0.1744186046511628,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.238,
+    "sleep_max": 4.5840000000000005,
+    "success_score": 74.22680412371135,
+    "block_rate": 0.25773195876288657,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.2600000000000002,
+    "sleep_max": 4.628,
+    "success_score": 62.35294117647059,
+    "block_rate": 0.3764705882352941,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.2790000000000004,
+    "sleep_max": 4.665,
+    "success_score": 69.69696969696969,
+    "block_rate": 0.30303030303030304,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.2950000000000004,
+    "sleep_max": 4.697,
+    "success_score": 78.18181818181819,
+    "block_rate": 0.21818181818181817,
+    "requests_per_session": 0
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.3080000000000003,
+    "sleep_max": 4.724,
+    "success_score": 47.82608695652174,
+    "block_rate": 0.5217391304347826,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.3190000000000004,
+    "sleep_max": 4.747000000000001,
+    "success_score": 41.25,
+    "block_rate": 0.5875,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.329,
+    "sleep_max": 4.766,
+    "success_score": 52.991452991452995,
+    "block_rate": 0.4700854700854701,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.337,
+    "sleep_max": 4.782,
+    "success_score": 64.8936170212766,
+    "block_rate": 0.35106382978723405,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.3440000000000003,
+    "sleep_max": 4.796,
+    "success_score": 68.35443037974683,
+    "block_rate": 0.31645569620253167,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.35,
+    "sleep_max": 4.808000000000001,
+    "success_score": 63.91752577319588,
+    "block_rate": 0.36082474226804123,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.355,
+    "sleep_max": 4.8180000000000005,
+    "success_score": 62.06896551724138,
+    "block_rate": 0.3793103448275862,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.359,
+    "sleep_max": 4.827,
+    "success_score": 65.71428571428572,
+    "block_rate": 0.34285714285714286,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.363,
+    "sleep_max": 4.8340000000000005,
+    "success_score": 65.78947368421052,
+    "block_rate": 0.34210526315789475,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 113,
+    "sleep_min": 2.366,
+    "sleep_max": 4.840000000000001,
+    "success_score": 67.79661016949153,
+    "block_rate": 0.3220338983050847,
+    "requests_per_session": 3
+  },
+  {
+    "concurrency": 95,
+    "sleep_min": 2.5380000000000003,
+    "sleep_max": 5.1850000000000005,
+    "success_score": 63.63636363636363,
+    "block_rate": 0.36363636363636365,
+    "requests_per_session": 0
+  },
+  {
+    "concurrency": 82,
+    "sleep_min": 2.685,
+    "sleep_max": 5.478000000000001,
+    "success_score": 65.34653465346534,
+    "block_rate": 0.3465346534653465,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 73,
+    "sleep_min": 2.81,
+    "sleep_max": 5.727,
+    "success_score": 77.5,
+    "block_rate": 0.225,
+    "requests_per_session": 4
+  },
+  {
+    "concurrency": 66,
+    "sleep_min": 2.9160000000000004,
+    "sleep_max": 5.939,
+    "success_score": 74.46808510638297,
+    "block_rate": 0.2553191489361702,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 61,
+    "sleep_min": 3.0060000000000002,
+    "sleep_max": 6.119000000000001,
+    "success_score": 66.66666666666667,
+    "block_rate": 0.3333333333333333,
+    "requests_per_session": 4
+  },
+  {
+    "concurrency": 57,
+    "sleep_min": 3.087,
+    "sleep_max": 6.281000000000001,
+    "success_score": 59.523809523809526,
+    "block_rate": 0.40476190476190477,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 55,
+    "sleep_min": 3.168,
+    "sleep_max": 6.4430000000000005,
+    "success_score": 71.42857142857143,
+    "block_rate": 0.2857142857142857,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 53,
+    "sleep_min": 3.237,
+    "sleep_max": 6.581,
+    "success_score": 61.904761904761905,
+    "block_rate": 0.38095238095238093,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 52,
+    "sleep_min": 3.2960000000000003,
+    "sleep_max": 6.698,
+    "success_score": 51.724137931034484,
+    "block_rate": 0.4827586206896552,
+    "requests_per_session": 3
+  },
+  {
+    "concurrency": 51,
+    "sleep_min": 3.346,
+    "sleep_max": 6.798,
+    "success_score": 53.211009174311926,
+    "block_rate": 0.46788990825688076,
+    "requests_per_session": 4
+  },
+  {
+    "concurrency": 45,
+    "sleep_min": 3.466,
+    "sleep_max": 7.037,
+    "success_score": 56.0,
+    "block_rate": 0.44,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 41,
+    "sleep_min": 3.568,
+    "sleep_max": 7.24,
+    "success_score": 81.33333333333333,
+    "block_rate": 0.18666666666666668,
+    "requests_per_session": 3
+  },
+  {
+    "concurrency": 38,
+    "sleep_min": 3.6540000000000004,
+    "sleep_max": 7.413,
+    "success_score": 26.76056338028168,
+    "block_rate": 0.7323943661971831,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 36,
+    "sleep_min": 3.7270000000000003,
+    "sleep_max": 7.5600000000000005,
+    "success_score": 84.61538461538461,
+    "block_rate": 0.15384615384615385,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 34,
+    "sleep_min": 3.789,
+    "sleep_max": 7.6850000000000005,
+    "success_score": 48.35164835164834,
+    "block_rate": 0.5164835164835165,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 33,
+    "sleep_min": 3.842,
+    "sleep_max": 7.791,
+    "success_score": 57.5,
+    "block_rate": 0.425,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 33,
+    "sleep_min": 3.887,
+    "sleep_max": 7.881,
+    "success_score": 52.38095238095239,
+    "block_rate": 0.47619047619047616,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 33,
+    "sleep_min": 3.9250000000000003,
+    "sleep_max": 7.958,
+    "success_score": 51.282051282051285,
+    "block_rate": 0.48717948717948717,
+    "requests_per_session": 2
+  },
+  {
+    "concurrency": 33,
+    "sleep_min": 3.958,
+    "sleep_max": 8.023,
+    "success_score": 53.57142857142857,
+    "block_rate": 0.4642857142857143,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 33,
+    "sleep_min": 3.986,
+    "sleep_max": 8.079,
+    "success_score": 62.6865671641791,
+    "block_rate": 0.373134328358209,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 33,
+    "sleep_min": 4.01,
+    "sleep_max": 8.126,
+    "success_score": 53.086419753086425,
+    "block_rate": 0.4691358024691358,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 33,
+    "sleep_min": 4.03,
+    "sleep_max": 8.166,
+    "success_score": 88.05970149253731,
+    "block_rate": 0.11940298507462686,
+    "requests_per_session": 6
+  },
+  {
+    "concurrency": 33,
+    "sleep_min": 4.047,
+    "sleep_max": 8.2,
+    "success_score": 43.42105263157895,
+    "block_rate": 0.5657894736842105,
+    "requests_per_session": 4
+  },
+  {
+    "concurrency": 31,
+    "sleep_min": 4.077,
+    "sleep_max": 8.261,
+    "success_score": 70.96774193548387,
+    "block_rate": 0.2903225806451613,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 26,
+    "sleep_min": 4.224,
+    "sleep_max": 8.556000000000001,
+    "success_score": 64.0625,
+    "block_rate": 0.359375,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 22,
+    "sleep_min": 4.349,
+    "sleep_max": 8.807,
+    "success_score": 52.87356321839081,
+    "block_rate": 0.47126436781609193,
+    "requests_per_session": 1
+  },
+  {
+    "concurrency": 20,
+    "sleep_min": 4.456,
+    "sleep_max": 9.02,
+    "success_score": 65.07936507936509,
+    "block_rate": 0.3492063492063492,
+    "requests_per_session": 5
+  }
+]

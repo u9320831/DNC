@@ -10,6 +10,7 @@ from curl_cffi.requests import AsyncSession, RequestsError
 import re
 import base64
 
+from config import config
 import spoof
 
 BROWSER_FINGERPRINTS = ["chrome124", "chrome126", "safari17_0", "edge124"]
@@ -107,7 +108,7 @@ class SessionWrapper:
         self.headers = get_dynamic_headers(self.browser)
         self.session = self._create_session()
         self.request_count = 0
-        self.max_requests_per_session = 100
+        self.max_requests_per_session = config.max_requests_per_session
 
     def _create_session(self):
         return AsyncSession(
@@ -119,6 +120,7 @@ class SessionWrapper:
 
     async def request(self, **kwargs):
         self.request_count += 1
+        config.requests_per_session = self.request_count
         
         if self.request_count > self.max_requests_per_session:
             await self.reset()
@@ -134,12 +136,13 @@ class SessionWrapper:
         try: await self.session.close()
         except: pass
         self.browser = random.choice(BROWSER_FINGERPRINTS)
+        config.requests_per_session = 0
         self.headers = get_dynamic_headers(self.browser)
         self.session = self._create_session()
         self.request_count = 0
 
 class RequestEngine:
-    def __init__(self, total_concurrency: int = 250):
+    def __init__(self, total_concurrency: int = config.total_concurrency):
         self.semaphore = asyncio.Semaphore(total_concurrency)
         self.sessions: Dict[int, SessionWrapper] = {}
 
@@ -154,12 +157,14 @@ class RequestEngine:
         headers = _inject_variables(template.headers, variables) if template.headers else None
         payload = _inject_variables(template.payload, variables) if template.payload else None
 
-        jitter = random.uniform(0.5, 1.5) 
+        jitter = random.uniform(config.sleep_min, config.sleep_max) 
         await asyncio.sleep(jitter)
 
         attempt = 0
         while attempt < template.max_retries:
             async with self.semaphore:
+                config.total_requests = getattr(config, "total_requests", 0) + 1
+
                 try:
                     wrapper = await self._get_session(port)
                     response = await wrapper.request(
@@ -173,10 +178,11 @@ class RequestEngine:
                     )
 
                     if response.status_code in [403, 429]:
+                        config.blocked_requests += 1
                         await spoof.NewNymAsync(spoof.global_registry, control_port)
                         await wrapper.reset()
                         attempt += 1
-                        await asyncio.sleep(random.uniform(1, 2))
+                        await asyncio.sleep(random.uniform(config.sleep_min, config.sleep_max))
                         continue
 
                     if response.status_code not in template.expected_status:
@@ -192,16 +198,17 @@ class RequestEngine:
                     attempt += 1
                     
                     if attempt >= template.max_retries:
+                        config.blocked_requests += 1
                         return {"status": "failed", "error": str(e)}
                         
                     await spoof.NewNymAsync(spoof.global_registry, control_port)
                     wrapper = await self._get_session(port)
                     await wrapper.reset()
-                    await asyncio.sleep(random.uniform(1, 2))        
+                    await asyncio.sleep(random.uniform(config.sleep_min, config.sleep_max))        
 
         return {"status": "failed", "error": "Max retries exceeded"}
 
-_ENGINE = RequestEngine(total_concurrency=250)
+_ENGINE = RequestEngine(total_concurrency=config.total_concurrency)
 
 async def run_template(template, pseudo, port, control_port, variables=None) -> Dict[str, Any]:
     variables = variables or {}
