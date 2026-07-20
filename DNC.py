@@ -1,3 +1,4 @@
+import os
 import orjson
 import threading
 import shutil
@@ -16,56 +17,175 @@ from optimizer import SmartOptimizer
 
 # --- Initialisation UI ---
 main_windows = ctk.CTk()
-main_windows.title("DNC - By 𝗖𝗶𝗿𝗼🌕")
-main_windows.geometry("800x650")
+main_windows.title("DNC - Discord Name Checker")
+main_windows.geometry("860x700")
 ctk.set_appearance_mode('dark')
 ctk.set_default_color_theme('blue')
 
 main_windows.grid_rowconfigure(1, weight=1)
 main_windows.grid_columnconfigure(0, weight=1)
 
-def create_stat_card(parent, col, title):
-    frame = ctk.CTkFrame(parent, height=50)
-    frame.grid(row=0, column=col, padx=10, pady=10, sticky="ew")
-    frame.grid_columnconfigure(0, weight=1)
-    ctk.CTkLabel(frame, text=title, font=("Arial", 12)).grid(row=0, column=0)
-    lbl = ctk.CTkLabel(frame, text="0", font=("Arial", 20, "bold"))
-    lbl.grid(row=1, column=0)
-    return lbl
+# --- Header ---
+Header_Frame = ctk.CTkFrame(main_windows, fg_color="transparent")
+Header_Frame.grid(row=0, column=0, padx=12, pady=12, sticky="ew")
+Header_Frame.grid_columnconfigure(1, weight=1)
+ctk.CTkLabel(Header_Frame, text="DNC", font=("Segoe UI", 22, "bold")).grid(row=0, column=0, sticky="w")
+ctk.CTkLabel(Header_Frame, text="Discord Name Checker", font=("Segoe UI", 12)).grid(row=1, column=0, sticky="w")
 
-# --- OUTPUT & MIDDLE ---
-OutputFrame = ctk.CTkTextbox(main_windows, font=("Consolas", 12))
-OutputFrame.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
-OutputFrame.configure(state="disabled")
+# --- Main content ---
+Main_Frame = ctk.CTkFrame(main_windows)
+Main_Frame.grid(row=1, column=0, padx=12, pady=(0, 12), sticky="nsew")
+Main_Frame.grid_columnconfigure(0, weight=1)
+Main_Frame.grid_columnconfigure(1, weight=1)
+Main_Frame.grid_rowconfigure(0, weight=1)
 
-Middle_Frame = ctk.CTkFrame(main_windows, height=200)
-Middle_Frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
+Left_Panel = ctk.CTkFrame(Main_Frame)
+Left_Panel.grid(row=0, column=0, padx=(0, 8), pady=0, sticky="nsew")
+Left_Panel.grid_columnconfigure(0, weight=1)
+Left_Panel.grid_rowconfigure(1, weight=1)
 
-Settings_Frame = ctk.CTkFrame(Middle_Frame, fg_color="transparent")
-Settings_Frame.pack(side="left", padx=20, pady=10)
-PseudoEntry = ctk.CTkEntry(Settings_Frame, placeholder_text="Length")
-PseudoEntry.pack(pady=5)
-PseudoEntry.bind("<KeyRelease>", lambda e: on_switch_change())
-WebhookEntry = ctk.CTkEntry(Settings_Frame, placeholder_text="Webhook URL")
-WebhookEntry.pack(pady=5)
+ctk.CTkLabel(Left_Panel, text="Configuration", font=("Segoe UI", 15, "bold")).grid(row=0, column=0, padx=10, pady=(10, 6), sticky="w")
+
+Settings_Frame = ctk.CTkFrame(Left_Panel, fg_color="transparent")
+Settings_Frame.grid(row=1, column=0, padx=10, pady=6, sticky="nsew")
+
+PseudoEntry = ctk.CTkEntry(Settings_Frame, placeholder_text="Longueur du pseudo")
+PseudoEntry.pack(fill="x", pady=4)
+WebhookEntry = ctk.CTkEntry(Settings_Frame, placeholder_text="Webhook Discord")
+WebhookEntry.pack(fill="x", pady=4)
+
+ctk.CTkLabel(Settings_Frame, text="Caractères", font=("Segoe UI", 12, "bold")).pack(anchor="w", pady=(10, 4))
 
 NumSwitch = ctk.CTkSwitch(Settings_Frame, text="0-9")
 NumSwitch.select()
-NumSwitch.pack(anchor="w")
+NumSwitch.pack(anchor="w", pady=2)
 CharSwitch = ctk.CTkSwitch(Settings_Frame, text="A-Z")
-CharSwitch.pack(anchor="w")
+CharSwitch.pack(anchor="w", pady=2)
 SymSwitch = ctk.CTkSwitch(Settings_Frame, text=".,_")
-SymSwitch.pack(anchor="w")
+SymSwitch.pack(anchor="w", pady=2)
+
+class TemplateMenu:
+    def __init__(self, parent):
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.pack(fill="x", pady=(10, 4))
+        ctk.CTkLabel(self.frame, text="Template", font=("Segoe UI", 12, "bold")).pack(anchor="w")
+        self.variable = ctk.StringVar(value="")
+        self.option_menu = ctk.CTkOptionMenu(self.frame, variable=self.variable, values=["Aucun template"])
+        self.option_menu.pack(fill="x", pady=4)
+        self.refresh()
+
+    def refresh(self):
+        template_names = []
+        templates_dir = Path("templates")
+        if templates_dir.exists():
+            for item in os.listdir(templates_dir):
+                if item.endswith(".json"):
+                    template_names.append(Path(item).stem)
+        template_names = sorted(template_names)
+
+        if not template_names:
+            self.option_menu.configure(values=["Aucun template"])
+            self.variable.set("Aucun template")
+            return
+
+        current = self.variable.get()
+        if current not in template_names:
+            current = template_names[0]
+        self.option_menu.configure(values=template_names)
+        self.variable.set(current)
+
+    def get_selected(self):
+        value = self.variable.get()
+        if not value or value == "Aucun template":
+            return None
+        return value
+
+
+template_menu = TemplateMenu(Settings_Frame)
+
+Right_Panel = ctk.CTkFrame(Main_Frame)
+Right_Panel.grid(row=0, column=1, padx=(8, 0), pady=0, sticky="nsew")
+Right_Panel.grid_columnconfigure(0, weight=1)
+Right_Panel.grid_rowconfigure(1, weight=1)
+
+ctk.CTkLabel(Right_Panel, text="Journal", font=("Segoe UI", 15, "bold")).grid(row=0, column=0, padx=10, pady=(10, 6), sticky="w")
+OutputFrame = ctk.CTkTextbox(Right_Panel, font=("Consolas", 11), height=10)
+OutputFrame.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="nsew")
+OutputFrame.configure(state="disabled")
+
+Provider_Frame = ctk.CTkScrollableFrame(Left_Panel, height=180)
+Provider_Frame.grid(row=2, column=0, padx=10, pady=(8, 10), sticky="ew")
+ctk.CTkLabel(Provider_Frame, text="Providers Tor", font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=6, pady=(4, 6))
+
+Footer_Frame = ctk.CTkFrame(main_windows, fg_color="transparent")
+Footer_Frame.grid(row=2, column=0, padx=12, pady=(0, 12), sticky="ew")
+Footer_Frame.grid_columnconfigure(0, weight=1)
+
 
 def on_switch_change():
-    charset = get_selected_chars()
+    return get_selected_chars()
+
+
+def on_create_click():
+    providers = load_providers()
+    if providers:
+        indexes = [int(k) for k in providers.keys()]
+        next_idx = max(indexes) + 1
+        last_provider = providers[str(max(indexes))]
+        next_socks = last_provider["socks_port"] + 2
+        next_control = last_provider["control_port"] + 2
+    else:
+        next_idx = 0
+        next_socks = 9050
+        next_control = 9051
+
+    result = macro.MacroTorcc(str(next_socks), str(next_control), str(next_idx))
+    if result == 1:
+        log_to_gui(f"[+] Provider #{next_idx} créé avec succès !", "#2ecc71")
+        populate_provider_frame()
+
+
+def on_remove_click():
+    config_path = Path("config.json")
+    if not config_path.exists():
+        return
+    try:
+        with open(config_path, "rb") as f:
+            data = orjson.loads(f.read())
+
+        providers = data.get("provider", {})
+        if not providers:
+            return
+
+        indexes = [int(k) for k in providers.keys()]
+        last_idx = max(indexes)
+        str_last_idx = str(last_idx)
+
+        tor_dir = Path("Tor")
+        data_dir = tor_dir / f"data{last_idx}"
+        torcc_file = tor_dir / f"torcc{last_idx}"
+        if torcc_file.exists():
+            torcc_file.unlink()
+        if data_dir.exists() and data_dir.is_dir():
+            shutil.rmtree(data_dir)
+
+        del data["provider"][str_last_idx]
+
+        with open(config_path, "wb") as f:
+            f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
+
+        log_to_gui(f"[-] Provider #{last_idx} supprimé.", "#e67e22")
+        populate_provider_frame()
+    except Exception as e:
+        log_to_gui(f"[-] Erreur suppression : {e}", "#e74c3c")
+
+ctk.CTkButton(Footer_Frame, text="Démarrer", command=lambda: threading.Thread(target=lambda: asyncio.run(run_scanner_process()), daemon=True).start()).grid(row=0, column=0, sticky="e", padx=4)
+ctk.CTkButton(Footer_Frame, text="Créer", command=on_create_click).grid(row=0, column=1, sticky="e", padx=4)
+ctk.CTkButton(Footer_Frame, text="Supprimer", command=on_remove_click).grid(row=0, column=2, sticky="e", padx=4)
 
 NumSwitch.configure(command=on_switch_change)
 CharSwitch.configure(command=on_switch_change)
 SymSwitch.configure(command=on_switch_change)
-
-Provider_Frame = ctk.CTkScrollableFrame(Middle_Frame, height=150, width=300)
-Provider_Frame.pack(side="right", padx=20, pady=10)
 
 def log_to_gui(text, color="white"):
     OutputFrame.configure(state="normal")
@@ -202,10 +322,12 @@ async def run_scanner_process():
         return
 
     templates = handler.load_templates_from_folder("templates")
-    discord_tpl = templates.get("discord")
+    selected_template_name = template_menu.get_selected()
+    template_name = selected_template_name or "discord"
+    discord_tpl = templates.get(template_name)
     
     if not discord_tpl:
-        log_to_gui("[-] Erreur : Template 'discord.json' introuvable dans le dossier 'templates' !", "#e74c3c")
+        log_to_gui(f"[-] Erreur : Template '{template_name}.json' introuvable dans le dossier 'templates' !", "#e74c3c")
         return
 
     instances_data = []
@@ -304,14 +426,6 @@ def display_free_pseudo(pseudo, port):
 
 def display_taken_pseudo(pseudo, port):
     log_to_gui(f"[-] Taken   : {pseudo} (Port: {port})", "#e74c3c")
-
-# --- Footer & Boutons ---
-Footer_Frame = ctk.CTkFrame(main_windows, fg_color="transparent")
-Footer_Frame.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
-
-ctk.CTkButton(Footer_Frame, text="Start Scan", command=lambda: threading.Thread(target=lambda: asyncio.run(run_scanner_process()), daemon=True).start()).pack(side="right", padx=5)
-ctk.CTkButton(Footer_Frame, text="+ Create", command=on_create_click).pack(side="right", padx=5)
-ctk.CTkButton(Footer_Frame, text="- Remove", command=on_remove_click).pack(side="right", padx=5)
 
 def load_user_settings():
     config_path = Path("config.json")
