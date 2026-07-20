@@ -6,3 +6,6 @@ stem
 PySocks
 aiohttp
 aiohttp-socks
+orjson
+picologging
+numpy

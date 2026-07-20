@@ -1,89 +1,209 @@
-import pathlib
 import asyncio
-from dataclasses import dataclass, field
-from typing import Callable, Dict, Optional
-import engine
-from engine import Generate
-import spoof
+import orjson
+import os
 import random
+import itertools
+import string
+from dataclasses import dataclass, field
+from typing import Any, Dict, Literal, Optional
+from curl_cffi.requests import AsyncSession, RequestsError
+import re
+import base64
+
+import spoof
+
+BROWSER_FINGERPRINTS = ["chrome124", "chrome126", "safari17_0", "edge124"]
+
+class Generate:
+    def __init__(self, length: int, charset: str = string.ascii_lowercase + string.digits):
+        self.length = length
+        self.charset = charset
+    
+    def __iter__(self):
+        for combination in itertools.product(self.charset, repeat=self.length):
+            yield "".join(combination)
+
+    def __len__(self):
+        return len(self.charset) ** self.length
 
 @dataclass
-class Core:
-    port: int = 0
-    control_port: int = 0
-    torcc_path: str = ""
-    tpls: Dict[str, engine.RequestTemplate] = field(default_factory=dict)
+class RequestTemplate:
+    name: str
+    url: str
+    method: str = "GET"
+    params: Optional[dict] = None
+    headers: Optional[dict] = None
+    payload: Any = None
+    expected_status: list[int] = field(default_factory=lambda: [200, 201, 204])
+    response_format: Literal["json", "text", "raw"] = "json"
+    browser: Literal["chrome", "edge", "safari"] = "chrome"
+    max_retries: int = 5 
+    retry_delay: float = 2.0
+    timeout: int = 15
+    status_map: Dict[str, str] = field(default_factory=lambda: {
+        "200": "taken", "201": "taken", "204": "available"
+    })
 
-    def __post_init__(self):
-        curr_dir = pathlib.Path(__file__).parent.resolve()
-        tpl_dir = curr_dir / "templates"
-        if tpl_dir.exists():
-            self.tpls = engine.load_templates_from_folder(str(tpl_dir))
-        else:
-            print(f"[-] Missing folder: {tpl_dir}")
+def load_templates_from_folder(folder_path: str) -> dict[str, RequestTemplate]:
+    templates = {}
+    if not os.path.exists(folder_path): return templates
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".json"):
+            with open(os.path.join(folder_path, filename), "rb") as f:
+                try:
+                    tpl = RequestTemplate(**orjson.loads(f.read()))
+                    templates[tpl.name] = tpl
+                except Exception as e:
+                    print(f"[-] Erreur chargement {filename} : {e}")
+    return templates
 
-    def gen_dict(self, length: int = 3, charset_opts: Optional[dict] = None):
-        if charset_opts:
-            return Generate(length, **charset_opts)
-        return Generate(length)
+def _inject_variables(value: Any, variables: Dict[str, Any]) -> Any:
+    if isinstance(value, str):
+        try: return value.format(**variables)
+        except: return value
+    elif isinstance(value, dict): return {k: _inject_variables(v, variables) for k, v in value.items()}
+    elif isinstance(value, list): return [_inject_variables(v, variables) for v in value]
+    return value
 
-    async def pipeline(
-            self,
-            pseudo: str,
-            tpl_name: str,
-            on_success: Optional[Callable[[str, int], None]] = None,
-            on_taken: Optional[Callable[[str, int], None]] = None,
-        ) -> bool:
-            tpl = self.tpls.get(tpl_name)
-            if not tpl:
-                print(f"[-] Template '{tpl_name}' not found.")
-                return False
+def get_dynamic_headers(browser_fingerprint: str) -> dict:
+    version = re.search(r'\d+', browser_fingerprint).group() if re.search(r'\d+', browser_fingerprint) else "124"
+    languages = ["fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7", "en-US,en;q=0.9", "es-ES,es;q=0.9,en;q=0.8"]
+    
+    properties = {
+        "os": "Windows",
+        "release_channel": "stable",
+        "client_version": "1.0.9031",
+        "os_version": "10.0.22621",
+        "os_arch": "x64",
+        "system_locale": "fr",
+    }
 
-            # On encapsule l'appel réseau pour intercepter les levées d'exceptions de l'engine
-            try:
-                out = await engine.run_template(
-                    template=tpl,
-                    pseudo=pseudo,
-                    port=self.port,
-                    control_port=self.control_port,
-                )
-            except Exception as e:
-                # Si l'engine lève une RuntimeError (fin de retries, rate limit persistant, etc.)
-                print(f"[-] Échec de l'engine pour {pseudo} (Port {self.port}): {e}")
-                return False
+    json_str = orjson.dumps(properties, option=orjson.OPT_INDENT_2)
+    encoded_properties = base64.b64encode(json_str).decode()
 
-            # Double sécurité au cas où l'engine renverrait quand même un truc vide
-            if out is None:
-                print(f"[-] Erreur critique : L'engine a renvoyé une réponse vide (None) pour {pseudo}")
-                return False
+    headers = {
+        "X-Super-Properties": encoded_properties,
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "User-Agent": f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version}.0.0.0 Safari/537.36",
+        "sec-ch-ua": f'"Chromium";v="{version}", "Google Chrome";v="{version}"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "Referer": "https://discord.com/",
+        "Origin": "https://discord.com",
+        "Accept": "*/*",
+        "Accept-Language": random.choice(languages),
+        "Connection": "keep-alive",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache"
+    }
+    return headers
 
-            status = out.get("status")
-            
-            if status == "available":
-                if on_success: 
-                    on_success(pseudo, self.port)
-                return True
-                
-            elif status == "taken":
-                if on_taken: 
-                    on_taken(pseudo, self.port)
-                return True
-                
-            else:
-                if out.get("status") == "failed" and out.get("error") == "Status 0":
-                    await spoof.NewNymAsync(spoof.global_registry, self.control_port)    
-                    print(f"[*]Warning (Ip bloqué -> Timeout ,Port :{self.control_port})")
+class SessionWrapper:
+    def __init__(self, port: int, browser: str):
+        self.port = port
+        self.browser = browser 
+        self.proxy = f"socks5h://127.0.0.1:{port}"
+        self.headers = get_dynamic_headers(self.browser)
+        self.session = self._create_session()
+        self.request_count = 0
+        self.max_requests_per_session = 100
+
+    def _create_session(self):
+        return AsyncSession(
+            impersonate=self.browser, 
+            proxies={"http": self.proxy, "https": self.proxy},
+            headers=self.headers,
+            timeout=20 
+        )
+
+    async def request(self, **kwargs):
+        self.request_count += 1
+        
+        if self.request_count > self.max_requests_per_session:
+            await self.reset()
+
+        try:
+            out = await self.session.request(**kwargs)
+            return out
+        finally:
+            if hasattr(self.session, 'cookies'):
+                self.session.cookies.clear()
+
+    async def reset(self):
+        try: await self.session.close()
+        except: pass
+        self.browser = random.choice(BROWSER_FINGERPRINTS)
+        self.headers = get_dynamic_headers(self.browser)
+        self.session = self._create_session()
+        self.request_count = 0
+
+class RequestEngine:
+    def __init__(self, total_concurrency: int = 250):
+        self.semaphore = asyncio.Semaphore(total_concurrency)
+        self.sessions: Dict[int, SessionWrapper] = {}
+
+    async def _get_session(self, port: int) -> SessionWrapper:
+        if port not in self.sessions:
+            self.sessions[port] = SessionWrapper(port, random.choice(BROWSER_FINGERPRINTS))
+        return self.sessions[port]
+
+    async def execute(self, template, pseudo, port, control_port, variables):
+        url = _inject_variables(template.url, variables)
+        params = _inject_variables(template.params, variables) if template.params else None
+        headers = _inject_variables(template.headers, variables) if template.headers else None
+        payload = _inject_variables(template.payload, variables) if template.payload else None
+
+        jitter = random.uniform(0.5, 1.5) 
+        await asyncio.sleep(jitter)
+
+        attempt = 0
+        while attempt < template.max_retries:
+            async with self.semaphore:
+                try:
+                    wrapper = await self._get_session(port)
+                    response = await wrapper.request(
+                        method=template.method.upper(),
+                        url=url,
+                        params=params,
+                        headers=headers or {},
+                        json=payload if isinstance(payload, (dict, list)) else None,
+                        data=payload if not isinstance(payload, (dict, list)) else None,
+                        timeout=template.timeout
+                    )
+
+                    if response.status_code in [403, 429]:
+                        await spoof.NewNymAsync(spoof.global_registry, control_port)
+                        await wrapper.reset()
+                        attempt += 1
+                        await asyncio.sleep(random.uniform(1, 2))
+                        continue
+
+                    if response.status_code not in template.expected_status:
+                        raise RequestsError(f"Status {response.status_code}")
+
+                    return {
+                        "status": template.status_map.get(str(response.status_code), "taken"),
+                        "http_code": response.status_code,
+                        "data": response.json() if template.response_format == "json" else response.text
+                    }
+
+                except Exception as e:
+                    attempt += 1
                     
-                    ip = spoof.get_current_ip(self.control_port)
-                    if ip:
-                        spoof.global_registry.Update(ip=ip, blocked=True, ratelimit=False)
+                    if attempt >= template.max_retries:
+                        return {"status": "failed", "error": str(e)}
+                        
+                    await spoof.NewNymAsync(spoof.global_registry, control_port)
+                    wrapper = await self._get_session(port)
+                    await wrapper.reset()
+                    await asyncio.sleep(random.uniform(1, 2))        
 
-                if out.get("status") == "failed" and out.get("error") == "Rate limited": 
-                    await spoof.NewNymAsync(spoof.global_registry, self.control_port)    
-                    print(f"[*]Warning (Ratelimit -> Timeout ,Port :{self.control_port})")
-                    
-                    ip = spoof.get_current_ip(self.control_port)
-                    if ip:
-                        spoof.global_registry.Update(ip=ip, blocked=False, ratelimit=True, duration=300)
+        return {"status": "failed", "error": "Max retries exceeded"}
 
-                return False
+_ENGINE = RequestEngine(total_concurrency=250)
+
+async def run_template(template, pseudo, port, control_port, variables=None) -> Dict[str, Any]:
+    variables = variables or {}
+    variables.setdefault("pseudo", pseudo)
+    return await _ENGINE.execute(template, pseudo, port, control_port, variables)

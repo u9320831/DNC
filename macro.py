@@ -1,5 +1,5 @@
 from pathlib import Path
-import json
+import orjson
 
 def MacroTorcc(TorPort: str, TorControlPort: str, idx: str) -> int:
     # Utilisation de chemins d'accès propres et compatibles Windows/Linux
@@ -48,8 +48,8 @@ EnforceDistinctSubnets 0
     config_path = Path("config.json")
     if config_path.exists():
         try:
-            with open(config_path, "r", encoding="utf-8") as config_f:
-                data = json.load(config_f)
+            with open(config_path, "rb") as config_f:
+                data = orjson.loads(config_f.read())
             
             if "provider" not in data:
                 data["provider"] = {}
@@ -60,8 +60,8 @@ EnforceDistinctSubnets 0
                 "torcc": str(torcc_path)
             }
 
-            with open(config_path, "w", encoding="utf-8") as config_f:
-                json.dump(data, config_f, indent=4)
+            with open(config_path, "wb") as config_f:
+                config_f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
 
         except Exception as e:
             print(f"[-] Erreur lors de la mise à jour de config.json : {e}")

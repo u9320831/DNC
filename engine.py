@@ -1,10 +1,10 @@
 import asyncio
-import json
+import orjson
 import os
 import random
 import itertools
 import string
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field 
 from typing import Any, Dict, Literal, Optional
 from curl_cffi.requests import AsyncSession, RequestsError
 import re
@@ -49,9 +49,9 @@ def load_templates_from_folder(folder_path: str) -> dict[str, RequestTemplate]:
     if not os.path.exists(folder_path): return templates
     for filename in os.listdir(folder_path):
         if filename.endswith(".json"):
-            with open(os.path.join(folder_path, filename), "r", encoding="utf-8") as f:
+            with open(os.path.join(folder_path, filename), "rb") as f:
                 try:
-                    tpl = RequestTemplate(**json.load(f))
+                    tpl = RequestTemplate(**orjson.loads(f.read()))
                     templates[tpl.name] = tpl
                 except Exception as e:
                     print(f"[-] Erreur chargement {filename} : {e}")
@@ -78,8 +78,8 @@ def get_dynamic_headers(browser_fingerprint: str) -> dict:
         "system_locale": "fr",
     }
 
-    json_str = json.dumps(properties, separators=(',', ':'))
-    encoded_properties = base64.b64encode(json_str.encode()).decode()
+    json_str = orjson.dumps(properties, option=orjson.OPT_INDENT_2)
+    encoded_properties = base64.b64encode(json_str).decode()
 
     headers = {
         "X-Super-Properties": encoded_properties,
@@ -92,9 +92,9 @@ def get_dynamic_headers(browser_fingerprint: str) -> dict:
         "Referer": "https://discord.com/",
         "Origin": "https://discord.com",
         "Accept": "*/*",
-        "Accept-Language": random.choice(languages), # Aléatoire
+        "Accept-Language": random.choice(languages),
         "Connection": "keep-alive",
-        "Cache-Control": "no-cache", # Moins suspect pour un bot
+        "Cache-Control": "no-cache",
         "Pragma": "no-cache"
     }
     return headers
@@ -115,21 +115,19 @@ class SessionWrapper:
         self.max_requests_per_session = 100
 
     async def request(self, **kwargs):
-            self.request_count += 1
-            
-            if self.request_count > self.max_requests_per_session:
-                await self.reset()
+        self.request_count += 1
+        
+        if self.request_count > self.max_requests_per_session:
+            await self.reset()
 
-            try:
-                out = await self.session.request(**kwargs)
-                return out
-                
-            except Exception as e:
-                raise e 
-                
-            finally:
-                if hasattr(self.session, 'cookies'):
-                    self.session.cookies.clear()
+        try:
+            out = await self.session.request(**kwargs)
+            return out
+        except Exception as e:
+            raise
+        finally:
+            if hasattr(self.session, 'cookies'):
+                self.session.cookies.clear()
 
     async def reset(self):
         try: await self.session.close()
@@ -161,56 +159,56 @@ class RequestEngine:
         return self.sessions[port]
 
     async def execute(self, template, pseudo, port, control_port, variables):
-            url = _inject_variables(template.url, variables)
-            params = _inject_variables(template.params, variables) if template.params else None
-            headers = _inject_variables(template.headers, variables) if template.headers else None
-            payload = _inject_variables(template.payload, variables) if template.payload else None
+        url = _inject_variables(template.url, variables)
+        params = _inject_variables(template.params, variables) if template.params else None
+        headers = _inject_variables(template.headers, variables) if template.headers else None
+        payload = _inject_variables(template.payload, variables) if template.payload else None
 
-            jitter = random.uniform(1, 3) 
-            await asyncio.sleep(jitter)
+        jitter = random.uniform(1, 3) 
+        await asyncio.sleep(jitter)
 
-            attempt = 0
-            while attempt < template.max_retries:
-                async with self.semaphore:
-                    try:
-                        wrapper = await self._get_session(port)
-                        response = await wrapper.request(
-                            method=template.method.upper(),
-                            url=url,
-                            params=params,
-                            headers=headers or {},
-                            json=payload if isinstance(payload, (dict, list)) else None,
-                            data=payload if not isinstance(payload, (dict, list)) else None,
-                            timeout=template.timeout
-                        )
+        attempt = 0
+        while attempt < template.max_retries:
+            async with self.semaphore:
+                try:
+                    wrapper = await self._get_session(port)
+                    response = await wrapper.request(
+                        method=template.method.upper(),
+                        url=url,
+                        params=params,
+                        headers=headers or {},
+                        json=payload if isinstance(payload, (dict, list)) else None,
+                        data=payload if not isinstance(payload, (dict, list)) else None,
+                        timeout=template.timeout
+                    )
 
-                        if response.status_code == 429:
-                            raise Exception("Rate limited")
-                        if response.status_code in [403]:
-                            raise Exception("Forbidden")
-                        if response.status_code not in template.expected_status:
-                            raise RequestsError(f"Status {response.status_code}")
+                    if response.status_code == 429:
+                        raise Exception("Rate limited")
+                    if response.status_code in [403]:
+                        raise Exception("Forbidden")
+                    if response.status_code not in template.expected_status:
+                        raise RequestsError(f"Status {response.status_code}")
 
-                        return {
-                            "status": template.status_map.get(str(response.status_code), "taken"),
-                            "http_code": response.status_code,
-                            "data": response.json() if template.response_format == "json" else response.text
-                        }
+                    return {
+                        "status": template.status_map.get(str(response.status_code), "taken"),
+                        "http_code": response.status_code,
+                        "data": response.json() if template.response_format == "json" else response.text
+                    }
 
-                    except Exception as e:
-                        attempt += 1
+                except Exception as e:
+                    attempt += 1
+                    
+                    if attempt >= template.max_retries:
+                        return {"status": "failed", "error": str(e)}
                         
-                        if attempt >= template.max_retries:
-                            return {"status": "failed", "error": str(e)}
-                            
-                        error_msg = str(e)
-                        if "Rate limited" in error_msg or "Forbidden" in error_msg:
-                            async with self._get_lock(control_port):
-                                await spoof.NewNymAsync(spoof.global_registry, control_port)
-                        
-                        wrapper = await self._get_session(port)
-                        await wrapper.reset()
-                        await asyncio.sleep(random.uniform(1, 2))        
+                    error_msg = str(e)
+                    if "Rate limited" in error_msg or "Forbidden" in error_msg:
+                        async with self._get_lock(control_port):
+                            await spoof.NewNymAsync(spoof.global_registry, control_port)
+                    
+                    wrapper = await self._get_session(port)
+                    await wrapper.reset()
+                    await asyncio.sleep(random.uniform(1, 2))        
 
 _ENGINE = RequestEngine(total_concurrency=250)
 
