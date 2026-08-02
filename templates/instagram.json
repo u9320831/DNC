@@ -1,0 +1,22 @@
+{
+  "name": "instagram",
+  "url": "https://i.instagram.com/api/v1/users/web_profile_info/?username={pseudo}",
+  "method": "GET",
+  "params": null,
+  "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "X-IG-App-ID": "936619743392459",
+    "Accept": "application/json"
+  },
+  "payload": null,
+  "expected_status": [200, 404, 429],
+  "response_format": "json",
+  "max_retries": 3,
+  "retry_delay": 2.0,
+  "timeout": 15,
+  "status_map": {
+    "200": "taken",
+    "404": "available",
+    "429": "rate_limited"
+  }
+}
