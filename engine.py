@@ -90,8 +90,6 @@ def get_dynamic_headers(browser_fingerprint: str) -> dict:
         "sec-ch-ua": f'"Chromium";v="{version}", "Google Chrome";v="{version}"',
         "sec-ch-ua-mobile": "?0",
         "sec-ch-ua-platform": '"Windows"',
-        "Referer": "https://discord.com/",
-        "Origin": "https://discord.com",
         "Accept": "*/*",
         "Accept-Language": random.choice(languages),
         "Connection": "keep-alive",
